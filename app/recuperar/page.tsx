@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { AuthNotice } from "@/components/auth/auth-card";
 import { RecuperarForm } from "@/components/recuperar-form";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { BrandMark } from "@/components/brand-mark";
 
 export const metadata: Metadata = {
   title: "Recuperar contraseña · Bakata",
@@ -18,28 +17,16 @@ export default async function RecuperarPage({
   const { error } = await searchParams;
 
   return (
-    <div className="relative grid min-h-dvh place-items-center">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="grid w-full max-w-sm gap-6 px-4">
-        <h1 className="sr-only">Recuperar contraseña</h1>
-        <BrandMark />
-        {error === "link" && (
-          <p
-            role="alert"
-            className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm"
-          >
-            El link venció, ya se usó o se abrió en otro navegador. Pedí uno nuevo.
-          </p>
-        )}
-        <RecuperarForm />
-        <p className="text-center text-sm text-muted-foreground">
-          <Link href="/login" className="font-semibold underline underline-offset-2">
-            Volver a iniciar sesión
-          </Link>
-        </p>
-      </div>
-    </div>
+    <AuthShell>
+      <RecuperarForm
+        notice={
+          error === "link" ? (
+            <AuthNotice tone="error">
+              El link venció, ya se usó o se abrió en otro navegador. Pedí uno nuevo.
+            </AuthNotice>
+          ) : null
+        }
+      />
+    </AuthShell>
   );
 }

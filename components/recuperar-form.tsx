@@ -1,15 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTurnstile } from "@/components/turnstile";
 import { pedirRecuperacion } from "@/app/recuperar/actions";
+import { AuthCard, AuthField, AuthFooter, AuthSubmit } from "@/components/auth/auth-card";
 
-export function RecuperarForm() {
+export function RecuperarForm({ notice }: { notice?: ReactNode }) {
   const [pending, setPending] = useState(false);
   const [enviado, setEnviado] = useState<string | null>(null);
   const turnstile = useTurnstile("recuperar");
@@ -30,36 +27,43 @@ export function RecuperarForm() {
 
   if (enviado) {
     return (
-      <Card className="mx-auto w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Revisá tu mail</CardTitle>
-          <CardDescription>
-            Si hay una cuenta con <strong className="text-foreground">{enviado}</strong>, te
-            mandamos un link para elegir una contraseña nueva. Abrilo en este mismo navegador.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <AuthCard
+        title="Revisá tu mail"
+        description={
+          <>
+            Si hay una cuenta con <strong>{enviado}</strong>, te mandamos un link para elegir una
+            contraseña nueva. Abrilo en este mismo navegador.
+          </>
+        }
+      >
+        <AuthFooter question="¿Ya la recordaste?" href="/login" linkLabel="Iniciar sesión" />
+      </AuthCard>
     );
   }
 
   return (
-    <Card className="mx-auto w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>Recuperar contraseña</CardTitle>
-        <CardDescription>Te mandamos un link para elegir una contraseña nueva.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="grid gap-4" onSubmit={handleSubmit}>
-          <div className="grid gap-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" autoComplete="username" required />
-          </div>
-          {turnstile.widget}
-          <Button type="submit" loading={pending || turnstile.verifying} className="mt-1">
-            {pending ? "Enviando…" : turnstile.verifying ? "Verificando…" : "Mandar link"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <AuthCard
+      title="Recuperar contraseña"
+      description="Te mandamos un link para elegir una contraseña nueva."
+    >
+      {notice}
+      <form className="mt-10 grid gap-8" onSubmit={handleSubmit}>
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          autoComplete="username"
+          placeholder="tu@email.com"
+          required
+        />
+        {turnstile.widget}
+        <AuthSubmit
+          pending={pending || turnstile.verifying}
+          label="Mandar link"
+          pendingLabel={pending ? "Enviando…" : "Verificando…"}
+        />
+      </form>
+      <AuthFooter question="¿Ya la recordaste?" href="/login" linkLabel="Iniciar sesión" />
+    </AuthCard>
   );
 }

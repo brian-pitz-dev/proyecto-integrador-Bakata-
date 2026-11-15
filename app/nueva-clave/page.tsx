@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthedUser } from "@/lib/supabase/auth";
 import { NuevaClaveForm } from "@/components/nueva-clave-form";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { BrandMark } from "@/components/brand-mark";
+import { AuthShell } from "@/components/auth/auth-shell";
 
 export const metadata: Metadata = {
   title: "Contraseña nueva · Bakata",
@@ -17,15 +16,8 @@ export default async function NuevaClavePage() {
   if (!user) redirect("/recuperar?error=link");
 
   return (
-    <div className="relative grid min-h-dvh place-items-center">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="grid w-full max-w-sm gap-6 px-4">
-        <h1 className="sr-only">Contraseña nueva</h1>
-        <BrandMark />
-        <NuevaClaveForm email={user.email ?? ""} />
-      </div>
-    </div>
+    <AuthShell>
+      <NuevaClaveForm email={user.email ?? ""} />
+    </AuthShell>
   );
 }

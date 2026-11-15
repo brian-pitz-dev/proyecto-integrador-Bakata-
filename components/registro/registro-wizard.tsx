@@ -163,7 +163,7 @@ export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
 
   if (enviadoA) {
     return (
-      <Card className="mx-auto w-full max-w-lg text-center">
+      <Card className="mx-auto w-full max-w-lg rounded-[25px] text-center">
         <CardContent className="grid justify-items-center gap-4 py-4" role="status">
           <div className="grid size-12 place-items-center rounded-full bg-primary/15 text-primary">
             <MailCheck className="size-6" aria-hidden="true" />
@@ -183,11 +183,11 @@ export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-3xl">
+    <Card className="mx-auto w-full max-w-3xl rounded-[25px] shadow-[0_4px_4px_0_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_0_rgba(10,4,20,0.55)]">
       <CardHeader className="gap-4">
         <div className="flex items-baseline justify-between gap-3">
-          <CardTitle className="text-xl">
-            {mode === "signup" ? "Crear cuenta" : "Completá tu perfil"}
+          <CardTitle className="font-sans text-2xl font-semibold">
+            {mode === "signup" ? "Registrarse en Bakata" : "Completá tu perfil"}
           </CardTitle>
           <span className="text-sm text-muted-foreground tabular-nums">
             Paso {paso + 1} de {pasos.length}

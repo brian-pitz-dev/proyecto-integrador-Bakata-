@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthCard, AuthField, AuthSubmit } from "@/components/auth/auth-card";
 import { cambiarClave } from "@/app/nueva-clave/actions";
 
 export function NuevaClaveForm({ email }: { email: string }) {
@@ -27,43 +24,31 @@ export function NuevaClaveForm({ email }: { email: string }) {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>Contraseña nueva</CardTitle>
-        <CardDescription>
-          Para {email}. Al menos 8 caracteres, con una letra y un número.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="grid gap-4" onSubmit={handleSubmit}>
-          {/* el gestor de contraseñas asocia la nueva a esta cuenta */}
-          <input type="hidden" name="username" autoComplete="username" value={email} />
-          <div className="grid gap-1.5">
-            <Label htmlFor="password">Contraseña nueva</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              required
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="passwordConfirm">Repetila</Label>
-            <Input
-              id="passwordConfirm"
-              name="passwordConfirm"
-              type="password"
-              autoComplete="new-password"
-              required
-            />
-          </div>
-          <Button type="submit" loading={pending} className="mt-1">
-            {pending ? "Guardando…" : "Guardar y entrar"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <AuthCard
+      title="Contraseña nueva"
+      description={`Para ${email}. Al menos 8 caracteres, con una letra y un número.`}
+    >
+      <form className="mt-10 grid gap-8" onSubmit={handleSubmit}>
+        {/* el gestor de contraseñas asocia la nueva a esta cuenta */}
+        <input type="hidden" name="username" autoComplete="username" value={email} />
+        <AuthField
+          id="password"
+          label="Contraseña nueva"
+          type="password"
+          autoComplete="new-password"
+          placeholder="Mínimo 8 caracteres"
+          minLength={8}
+          required
+        />
+        <AuthField
+          id="passwordConfirm"
+          label="Repetila"
+          type="password"
+          autoComplete="new-password"
+          required
+        />
+        <AuthSubmit pending={pending} label="Guardar y entrar" pendingLabel="Guardando…" />
+      </form>
+    </AuthCard>
   );
 }

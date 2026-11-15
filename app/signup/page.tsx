@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RegistroWizard } from "@/components/registro/registro-wizard";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { BrandMark } from "@/components/brand-mark";
+import { AuthShell } from "@/components/auth/auth-shell";
 
 export const metadata: Metadata = {
   title: "Crear cuenta · Bakata",
@@ -12,21 +11,16 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <div className="relative grid min-h-dvh place-items-center py-6">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="grid w-full max-w-3xl gap-4 px-4">
-        <h1 className="sr-only">Crear cuenta</h1>
-        <BrandMark />
+    <AuthShell>
+      <div className="grid w-full max-w-[640px] gap-5">
         <RegistroWizard mode="signup" />
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-base text-[#1f1f1f] dark:text-[#ddd0ea]">
           ¿Ya tenés cuenta?{" "}
-          <Link href="/login" className="font-semibold underline underline-offset-2">
+          <Link href="/login" className="text-[#9f61d5] hover:underline dark:text-[#b98ae6]">
             Iniciar sesión
           </Link>
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

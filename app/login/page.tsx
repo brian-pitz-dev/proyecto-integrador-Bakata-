@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { AuthNotice } from "@/components/auth/auth-card";
 import { LoginForm } from "@/components/login-form";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { BrandMark } from "@/components/brand-mark";
 
 export const metadata: Metadata = {
   title: "Iniciar sesión · Bakata",
@@ -17,64 +16,28 @@ export default async function LoginPage({
 }) {
   const { error, confirmada, borrada, email } = await searchParams;
 
+  const notice =
+    error === "confirmacion" ? (
+      <AuthNotice tone="error">
+        El link de confirmación venció o ya se usó. Si ya confirmaste tu cuenta, iniciá sesión
+        normalmente.
+      </AuthNotice>
+    ) : confirmada ? (
+      <AuthNotice>Tu email quedó confirmado. Iniciá sesión para entrar a tu plan.</AuthNotice>
+    ) : email === "ok" ? (
+      <AuthNotice>Listo, tu email cambió. Iniciá sesión con el email nuevo.</AuthNotice>
+    ) : email === "falta-otro" ? (
+      <AuthNotice>
+        Falta un paso: abrí también el link que te mandamos al otro email. Hasta entonces, seguís
+        entrando con el de antes.
+      </AuthNotice>
+    ) : borrada ? (
+      <AuthNotice>Tu cuenta y todos tus datos se borraron.</AuthNotice>
+    ) : null;
+
   return (
-    <div className="relative grid min-h-dvh place-items-center">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="grid w-full max-w-sm gap-6 px-4">
-        <h1 className="sr-only">Iniciar sesión</h1>
-        <BrandMark />
-        {error === "confirmacion" && (
-          <p
-            role="alert"
-            className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm"
-          >
-            El link de confirmación venció o ya se usó. Si ya confirmaste tu cuenta, iniciá sesión
-            normalmente.
-          </p>
-        )}
-        {confirmada && (
-          <p
-            role="status"
-            className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm"
-          >
-            Tu email quedó confirmado. Iniciá sesión para entrar a tu plan.
-          </p>
-        )}
-        {(email === "ok" || email === "falta-otro") && (
-          <p
-            role="status"
-            className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm"
-          >
-            {email === "ok"
-              ? "Listo, tu email cambió. Iniciá sesión con el email nuevo."
-              : "Falta un paso: abrí también el link que te mandamos al otro email. Hasta entonces, seguís entrando con el de antes."}
-          </p>
-        )}
-        {borrada && (
-          <p
-            role="status"
-            className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm"
-          >
-            Tu cuenta y todos tus datos se borraron.
-          </p>
-        )}
-        <LoginForm />
-        <div className="grid gap-2 text-center text-sm text-muted-foreground">
-          <p>
-            <Link href="/recuperar" className="underline underline-offset-2">
-              ¿Olvidaste tu contraseña?
-            </Link>
-          </p>
-          <p>
-            ¿No tenés cuenta?{" "}
-            <Link href="/signup" className="font-semibold underline underline-offset-2">
-              Crear cuenta
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+    <AuthShell>
+      <LoginForm notice={notice} />
+    </AuthShell>
   );
 }
