@@ -76,9 +76,7 @@ export default async function CoachPage() {
       resumen={resumen}
       usosHoy={uso?.usos ?? 0}
       limite={AI_DAILY_LIMIT}
-      tieneComidas={!!planIa.comidas}
       tieneRutinas={!!planIa.ejercicios}
-      comidasDesactualizadas={isStale(planIa.comidasUpdatedAt)}
       rutinasDesactualizadas={isStale(planIa.ejerciciosUpdatedAt)}
     />
   );

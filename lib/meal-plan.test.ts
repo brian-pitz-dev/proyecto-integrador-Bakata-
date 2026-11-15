@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   getMealsForDay,
   mealBank,
+  PROTEINA_G_POR_KG,
+  hcObjetivo,
+  tipoDiaPara,
   portionFactor,
   umbralAlmuerzo,
   type Meal,
@@ -34,22 +37,43 @@ describe("plan de comidas", () => {
     expect(umbralAlmuerzo(70)).toBeLessThan(55);
   });
 
-  it("con meta: huevos de a 50 g y, si el factor no topó, el total queda a ≤10% de la meta", () => {
-    for (let w = 1; w <= 40; w++)
-      for (let d = 0; d < 5; d++)
-        for (const meta of [1900, 2300, 2600, 3000]) {
-          const scaled = getMealsForDay(w, d, carbLoad, { metaKcal: meta, pesoKg: 94.9 });
-          expect(scaled.factor).toBeGreaterThanOrEqual(0.75);
-          expect(scaled.factor).toBeLessThanOrEqual(1.3);
-          for (const m of scaled.meals)
+  it("banco base con peso: la proteína del día sigue al peso de cada persona", () => {
+    for (const [peso, meta] of [
+      [50, 1800],
+      [70, 2300],
+      [94.9, 2600],
+    ] as const) {
+      const objetivo = peso * PROTEINA_G_POR_KG;
+      for (let w = 1; w <= 20; w++)
+        for (let d = 0; d < 5; d++) {
+          const dia = getMealsForDay(w, d, carbLoad, { metaKcal: meta, pesoKg: peso });
+          expect(dia.personalizado).toBe(true);
+          expect(dia.totalProteinG, `peso ${peso} semana ${w} día ${d}`).toBeGreaterThan(
+            objetivo * 0.8,
+          );
+          expect(dia.totalProteinG, `peso ${peso} semana ${w} día ${d}`).toBeLessThan(
+            objetivo * 1.35,
+          );
+          expect(dia.totalKcal).toBeLessThanOrEqual(meta * 1.1);
+          for (const m of dia.meals)
             for (const i of m.meal.ingredientes)
               if (i.id === "huevoFrito") expect((i.cantidad ?? 0) % 50).toBe(0);
-          if (scaled.factor > 0.75 && scaled.factor < 1.3)
-            expect(
-              Math.abs(scaled.totalKcal - meta) / meta,
-              `semana ${w} día ${d} meta ${meta}`,
-            ).toBeLessThanOrEqual(0.1);
         }
+    }
+  });
+
+  it("hidratos: objetivo según el tipo de día, sin comerse las grasas mínimas", () => {
+    expect(tipoDiaPara(["rest"], false)).toBe("descanso");
+    expect(tipoDiaPara(["core", "gym"], false)).toBe("gym");
+    expect(tipoDiaPara(["long"], false)).toBe("fondo");
+    expect(tipoDiaPara(["gym"], true)).toBe("carga");
+    expect(hcObjetivo(50, "descanso", 1800)).toBe(150);
+    expect(hcObjetivo(50, "gym", 1800)).toBe(200);
+    // carga 8 g/kg = 400 g, pero con 1800 kcal solo entran 270 g sin bajar de 0,8 g/kg de grasa
+    expect(hcObjetivo(50, "carga", 1800)).toBe(270);
+    const dia = getMealsForDay(2, 0, carbLoad, { pesoKg: 50, metaKcal: 1800, tipoDia: "gym" });
+    expect(dia.hcObjetivoG).toBe(200);
+    expect(dia.totalHcG ?? 0).toBeGreaterThan(200 * 0.7);
   });
 
   it("banco propio (IA): los totales estimados escalan con el factor", () => {

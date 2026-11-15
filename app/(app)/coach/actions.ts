@@ -185,7 +185,7 @@ export async function generarPlanComidas(input: {
   const prompt = [
     describeUser(ctx, peso),
     target
-      ? `Meta calórica de hoy: ~${target.meta} kcal (cambia según la fase).`
+      ? `Meta calórica de hoy: ~${target.meta} kcal (objetivo: ${target.objetivo === "subir" ? "subir de peso, con superávit" : target.objetivo === "bajar" ? "bajar de peso, con déficit según la fase" : "mantener el peso"}).`
       : "Meta calórica: sin dato todavía.",
     `Proteína objetivo: ~${Math.round(pesoKg * PROTEINA_G_POR_KG)} g/día (${PROTEINA_G_POR_KG} g/kg); el almuerzo tiene que aportar al menos ~${Math.round(pesoKg * 0.58)} g.`,
     `Lo que el usuario tiene o quiere comer:\n"""${texto}"""`,

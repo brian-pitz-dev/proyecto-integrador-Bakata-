@@ -10,15 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { ZONAS } from "@/lib/validation/coach";
-import {
-  borrarPlanIa,
-  chatCoach,
-  generarPlanComidas,
-  generarRutinas,
-} from "@/app/(app)/coach/actions";
+import { borrarPlanIa, chatCoach, generarRutinas } from "@/app/(app)/coach/actions";
 
 type Msg = { role: "user" | "model"; text: string };
-type Busy = null | "chat" | "agregar" | "reemplazar" | "rutinas" | "comidas" | "ejercicios";
+type Busy = null | "chat" | "rutinas" | "ejercicios";
 
 const TEXTAREA =
   "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
@@ -27,18 +22,14 @@ export function CoachClient({
   resumen,
   usosHoy,
   limite,
-  tieneComidas,
   tieneRutinas,
-  comidasDesactualizadas,
   rutinasDesactualizadas,
 }: {
   /** Resumen de la semana armado en el server sin IA (lib/stats-summary.ts resumenSemanal). */
   resumen: string[];
   usosHoy: number;
   limite: number;
-  tieneComidas: boolean;
   tieneRutinas: boolean;
-  comidasDesactualizadas: boolean;
   rutinasDesactualizadas: boolean;
 }) {
   const router = useRouter();
@@ -46,7 +37,6 @@ export function CoachClient({
   const [busy, setBusy] = useState<Busy>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
-  const [comidasTexto, setComidasTexto] = useState("");
   const [equipo, setEquipo] = useState("");
   const [zonas, setZonas] = useState<string[]>([]);
 
@@ -86,18 +76,6 @@ export function CoachClient({
     if (!result) setDraft(text);
   }
 
-  async function handleComidas(modo: "agregar" | "reemplazar") {
-    const result = await run(modo, () => generarPlanComidas({ texto: comidasTexto, modo }));
-    if (!result) return;
-    toast.success(
-      modo === "agregar"
-        ? `Sumamos ${result.agregados ?? 0} platos a tu rotación. Van a ir apareciendo en Nutrición.`
-        : "Listo, armamos tu plan de comidas nuevo. Miralo en Nutrición.",
-    );
-    setComidasTexto("");
-    router.refresh();
-  }
-
   async function handleRutinas() {
     const result = await run("rutinas", () => generarRutinas({ equipo, zonas }));
     if (!result) return;
@@ -105,7 +83,7 @@ export function CoachClient({
     router.refresh();
   }
 
-  async function handleBorrar(tipo: "comidas" | "ejercicios") {
+  async function handleBorrar(tipo: "ejercicios") {
     const result = await run(tipo, () => borrarPlanIa(tipo));
     if (!result) return;
     toast.success("Volviste al plan base.");
@@ -113,10 +91,10 @@ export function CoachClient({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-6">
+    <div className="mx-auto grid w-full max-w-4xl gap-10">
       <div>
-        <h1 className="text-4xl font-bold">Coach</h1>
-        <p className="max-w-prose text-muted-foreground">
+        <h1 className="text-4xl font-bold sm:text-5xl">Coach</h1>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-muted-foreground">
           Preguntale sobre tu plan, tus comidas o tus entrenamientos. Conoce tu perfil, tus eventos
           y la fase en la que estás.
         </p>
@@ -188,67 +166,14 @@ export function CoachClient({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Plan de comidas con IA</CardTitle>
-            <CardDescription>
-              Contá qué ingredientes o comidas tenés o querés comer. Podés sumarlos a tu rotación o
-              armar un plan nuevo desde cero. Las porciones se ajustan solas a tu meta calórica.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {comidasDesactualizadas && (
-              <p className="text-sm text-amber-600 dark:text-amber-400">
-                Tus eventos o tu perfil cambiaron desde que generaste este plan. Conviene rearmarlo.
-              </p>
-            )}
-            <Label htmlFor="comidas-texto">Ingredientes o comidas</Label>
-            <textarea
-              id="comidas-texto"
-              rows={4}
-              maxLength={1000}
-              value={comidasTexto}
-              onChange={(e) => setComidasTexto(e.target.value)}
-              placeholder="Ej: tengo lentejas, atún, batata y huevos; me gustan las tartas; no como pescado"
-              className={TEXTAREA}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() => handleComidas("agregar")}
-                loading={busy === "agregar"}
-                disabled={!!busy || sinCuota || comidasTexto.trim().length < 3}
-              >
-                {busy === "agregar" ? "Agregando…" : "Agregar al plan"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleComidas("reemplazar")}
-                loading={busy === "reemplazar"}
-                disabled={!!busy || sinCuota || comidasTexto.trim().length < 3}
-              >
-                {busy === "reemplazar" ? "Armando…" : "Armar plan nuevo"}
-              </Button>
-              {tieneComidas && (
-                <Button
-                  variant="ghost"
-                  onClick={() => handleBorrar("comidas")}
-                  loading={busy === "comidas"}
-                  disabled={!!busy}
-                >
-                  Volver al plan base
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Rutinas de gym con IA</CardTitle>
             <CardDescription>
-              Arma tus 7 rutinas de gym según tus eventos, tus metas, las zonas que quieras
-              priorizar y el equipo que tengas. El plan sigue decidiendo qué rutina toca cada día.
+              Arma tus rutinas de gym según tus eventos, tus metas, las zonas que quieras priorizar
+              y el equipo que tengas. El plan decide cuál toca cada día según tus días de
+              entrenamiento.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">

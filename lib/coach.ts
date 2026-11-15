@@ -56,7 +56,7 @@ export const MEALS_SYSTEM = `Sos un planificador de comidas para una app de entr
 - Tipos de comida (lunes a viernes): desayuno, media (media mañana), almuerzo (comida principal, la más proteica), merienda, cena.
 - Usá comida simple y accesible en Argentina, con nombres locales.
 - "ingredientes": cada ingrediente con su nombre corto y gramos de la porción (como se pesa para cocinar).
-- "proteinG" y "kcal": totales estimados del plato para esa porción, realistas.
+- "proteinG", "hcG" (hidratos de carbono), "grasaG" y "kcal": totales estimados del plato para esa porción, realistas y coherentes entre sí (kcal ≈ 4·proteína + 4·hidratos + 9·grasas).
 - "detail": una línea corta de preparación o cantidades.
 - "carbLoad": true solo en almuerzos altos en carbohidratos (pasta, arroz, polenta, papa) aptos para carga previa a una carrera larga o caminata.
 - "liviana": true en meriendas/cenas livianas.

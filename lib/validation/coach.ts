@@ -63,6 +63,8 @@ const aiMealSchema = z.object({
   detail: shown(200, 0),
   proteinG: z.number().min(0).max(150),
   kcal: z.number().min(0).max(2000),
+  hcG: z.number().min(0).max(400),
+  grasaG: z.number().min(0).max(200),
   ingredientes: z
     .array(
       z.object({
@@ -98,6 +100,8 @@ export function aiMealToMeal(m: AiMeal): Meal {
     detail: m.detail,
     proteinG: m.proteinG,
     kcal: m.kcal,
+    hcG: m.hcG,
+    grasaG: m.grasaG,
     carbLoad: m.carbLoad,
     liviana: m.liviana,
     ingredientes: m.ingredientes.map((i) => ({
@@ -146,6 +150,8 @@ const storedMealSchema = z.object({
   liviana: z.boolean().optional(),
   proteinG: z.number().min(0).max(300).optional(),
   kcal: z.number().min(0).max(4000).optional(),
+  hcG: z.number().min(0).max(800).optional(),
+  grasaG: z.number().min(0).max(400).optional(),
 });
 
 const storedArr = z.array(storedMealSchema).min(1).max(15);
