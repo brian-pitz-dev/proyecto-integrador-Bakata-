@@ -1,4 +1,4 @@
-import { Flame } from "lucide-react";
+import { BrandIcon } from "@/components/brand-icon";
 import { cn } from "@/lib/utils";
 
 /** Pantalla de carga de marca para los loading.tsx: logo con anillo girando + qué se está preparando. */
@@ -27,9 +27,7 @@ export function LoadingScreen({
             className="absolute inset-0 animate-spin rounded-full border-4 border-primary/15 border-t-primary [animation-duration:1.1s]"
             aria-hidden="true"
           />
-          <div className="relative grid size-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-            <Flame className="size-8 animate-pulse" aria-hidden="true" />
-          </div>
+          <BrandIcon className="relative size-16 animate-pulse drop-shadow-lg" />
         </div>
         <div className="grid gap-1.5">
           <p className="font-heading text-2xl font-semibold text-foreground">{title}</p>

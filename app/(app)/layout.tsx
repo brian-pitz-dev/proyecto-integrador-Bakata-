@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Flame } from "lucide-react";
+import { BrandIcon } from "@/components/brand-icon";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NavTabs, BottomTabs } from "@/components/nav/nav-tabs";
 import { LogoutButton } from "@/components/nav/logout-button";
@@ -12,16 +12,14 @@ export default async function AppLayout({ children }: Readonly<{ children: React
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b bg-background px-4 py-2.5 lg:px-8">
+      <header className="sticky top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-md lg:px-8">
         <Link
           href="/calendario"
           aria-label="Bakata, ir al calendario"
-          className="col-start-1 flex items-center gap-2 justify-self-start rounded-lg font-heading text-lg font-semibold text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="col-start-1 flex items-center gap-2.5 justify-self-start rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/30">
-            <Flame className="size-4.5" aria-hidden="true" />
-          </span>
-          Bakata
+          <BrandIcon className="size-9 drop-shadow-sm" />
+          <span className="font-heading text-xl font-semibold text-foreground">Bakata</span>
         </Link>
         <div className="col-start-2 min-w-0 justify-self-center">
           <NavTabs />
@@ -34,7 +32,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-24 lg:px-8 lg:pb-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-10 pb-32 lg:px-8 lg:pt-14 lg:pb-20">
         {children}
       </main>
 

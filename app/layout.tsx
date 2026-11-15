@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Barlow, Barlow_Condensed } from "next/font/google";
+import { Oswald, Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-const barlow = Barlow({
+// Misma tipografía que el diseño de login/registro (Figma): Poppins para texto, Oswald para títulos.
+const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
 });
 
-const barlowCondensed = Barlow_Condensed({
+const oswald = Oswald({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
   variable: "--font-heading",
@@ -37,7 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="es"
-      className={`h-full antialiased ${barlow.variable} ${barlowCondensed.variable}`}
+      className={`h-full antialiased ${poppins.variable} ${oswald.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-full bg-background text-foreground">
