@@ -10,6 +10,10 @@ export interface UserProfile {
   factorActividad: number;
   calibracionPesoKg?: number | null;
   calibracionBmrKcal?: number | null;
+  /** Peso al que quiere llegar: decide si se come en déficit, en superávit o en mantenimiento. */
+  metaPesoKg?: number | null;
+  /** Peso del onboarding: se usa mientras no haya ningún peso registrado. */
+  pesoInicialKg?: number | null;
 }
 
 /** Mifflin-St Jeor: +5 para hombres, -161 para mujeres. */
@@ -41,10 +45,41 @@ export function deficitDeFase(phaseKey: string | null): number {
   return (phaseKey && deficitPorFase[phaseKey]) || 400;
 }
 
+/** Superávit para ganar músculo sin sumar mucha grasa (~0,25 kg por semana). */
+export const SUPERAVIT_KCAL = 250;
+/** Diferencia con la meta (kg) por debajo de la cual se considera que ya llegó: mantenimiento. */
+const TOLERANCIA_META_KG = 0.5;
+
+export type ObjetivoCalorico = "bajar" | "subir" | "mantener";
+
+/** Qué busca la persona según su meta de peso (sin meta = mantener). */
+export function objetivoCalorico(
+  pesoActual: number,
+  metaPesoKg: number | null | undefined,
+): ObjetivoCalorico {
+  if (metaPesoKg == null) return "mantener";
+  if (metaPesoKg < pesoActual - TOLERANCIA_META_KG) return "bajar";
+  if (metaPesoKg > pesoActual + TOLERANCIA_META_KG) return "subir";
+  return "mantener";
+}
+
+/**
+ * Kcal que se restan al gasto del día (negativo = superávit): déficit por fase para bajar,
+ * superávit fijo para subir, 0 para mantener.
+ */
+export function ajusteCalorico(objetivo: ObjetivoCalorico, phaseKey: string | null): number {
+  if (objetivo === "bajar") return deficitDeFase(phaseKey);
+  if (objetivo === "subir") return -SUPERAVIT_KCAL;
+  return 0;
+}
+
 export interface CalorieTarget {
   meta: number;
   gastoCalorico: number;
+  /** Kcal restadas al gasto (negativo = superávit). */
   deficit: number;
+  /** Bajar, subir o mantener el peso, según la meta del perfil. */
+  objetivo: ObjetivoCalorico;
   fuente: "xiaomi" | "estimado";
   /** Último peso registrado: lo usa Nutrición para el umbral/objetivo de proteína. */
   pesoKg: number;
@@ -79,13 +114,13 @@ export async function getCalorieTarget(
       .limit(1),
   ]);
 
-  if (!pesoLogs || pesoLogs.length === 0) return null;
-  return calcularMeta(
-    Number((pesoLogs[0] as Registro).valor),
-    logDelDia ? Number(logDelDia.valor) : null,
-    profile,
-    phaseKey,
-  );
+  // sin pesajes registrados todavía: vale el peso que cargó en el onboarding
+  const pesoActual =
+    pesoLogs && pesoLogs.length > 0
+      ? Number((pesoLogs[0] as Registro).valor)
+      : (profile.pesoInicialKg ?? null);
+  if (!pesoActual || !(pesoActual > 0)) return null;
+  return calcularMeta(pesoActual, logDelDia ? Number(logDelDia.valor) : null, profile, phaseKey);
 }
 
 /**
@@ -103,11 +138,13 @@ export function calcularMeta(
   const gastoCalorico = xiaomi
     ? bmrCalibrado + activasDelDia
     : bmrCalibrado * profile.factorActividad;
-  const deficit = deficitDeFase(phaseKey);
+  const objetivo = objetivoCalorico(pesoActual, profile.metaPesoKg);
+  const deficit = ajusteCalorico(objetivo, phaseKey);
   return {
     meta: Math.round(gastoCalorico - deficit),
     gastoCalorico: Math.round(gastoCalorico),
     deficit,
+    objetivo,
     fuente: xiaomi ? "xiaomi" : "estimado",
     pesoKg: pesoActual,
   };

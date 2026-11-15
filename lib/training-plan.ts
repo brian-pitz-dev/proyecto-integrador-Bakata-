@@ -496,7 +496,16 @@ function pushCompressedBlock(
   if (weeksAvailable >= ideal) {
     const padding = weeksAvailable - ideal;
     if (padding > 0) {
-      pushContentWeeks(out, cursor, wnumRef, padding, phase6Week, 1, "p6", "FASE — Mantenimiento");
+      pushContentWeeks(
+        out,
+        cursor,
+        wnumRef,
+        padding,
+        phase6Week,
+        1,
+        "p6",
+        "FASE — Base (antes de la preparación)",
+      );
     }
     pushContentWeeks(out, cursor, wnumRef, ideal, fn, 1, phaseKey, phaseLabel);
   } else {
@@ -629,7 +638,7 @@ export function buildPlan(
     phase6Week,
     1,
     "p6",
-    "FASE — Mantenimiento",
+    "FASE — Base (sin eventos próximos)",
   );
 
   const isoWeeks = out.map((w, i) => {
