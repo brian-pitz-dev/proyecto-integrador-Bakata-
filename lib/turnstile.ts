@@ -1,4 +1,7 @@
 const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+// Claves de prueba de Cloudflare (1x…AA, 2x…AA, 3x…AA): siempre devuelven hostname
+// "example.com" y action "test", así que en desarrollo solo se exige success.
+const DUMMY_SECRET = /^[123]x0+AA$/;
 
 /**
  * Canonical server-side Turnstile check (Cloudflare Turnstile Spin, Step 9):
@@ -44,6 +47,10 @@ export async function verifyTurnstileToken(
   } catch {
     return false;
   }
+
+  const usingDummySecret =
+    process.env.NODE_ENV !== "production" && DUMMY_SECRET.test(process.env.TURNSTILE_SECRET ?? "");
+  if (usingDummySecret) return result.success === true;
 
   return (
     result.success === true &&
