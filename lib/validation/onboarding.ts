@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { toISO, todayNormalized } from "@/lib/date";
+import { LUGARES, NIVELES, OBJETIVOS, type DiasGym } from "@/lib/training-profile";
+import { WEEK_DAYS, validateStrengthDays } from "@/lib/strength-schedule";
 
 export const signupSchema = z.object({
   email: z.string().trim().email(),
@@ -20,15 +22,42 @@ export const eventoSchema = z.object({
   distanciaKm: z.number().finite().positive().max(1000),
 });
 
-export const onboardingSchema = z.object({
-  edad: z.number().int().min(10).max(100),
-  alturaCm: z.number().finite().min(100).max(250),
-  sexo: z.enum(["M", "F"]),
-  pesoInicialKg: z.number().finite().min(30).max(300),
-  factorActividad: z.number().finite().min(1).max(2.5).default(1.55),
-  metaPesoKg: z.number().finite().min(30).max(300).nullish(),
-  metaGrasaPct: z.string().trim().max(20).nullish(),
-  calibracionPesoKg: z.number().finite().min(30).max(300).nullish(),
-  calibracionBmrKcal: z.number().finite().min(500).max(6000).nullish(),
-  eventos: z.array(eventoSchema).min(1, "Agregá al menos un evento"),
+const trainingFields = z.object({
+  nivel: z.enum(NIVELES),
+  objetivo: z.enum(OBJETIVOS),
+  diasGym: z.number().int().min(2).max(5),
+  diasFuerza: z
+    .array(z.enum(WEEK_DAYS as [string, ...string[]]))
+    .max(7)
+    .nullish(),
+  lugar: z.enum(LUGARES),
 });
+
+function refineStrengthDays(
+  v: { diasGym: number; diasFuerza?: string[] | null },
+  ctx: z.RefinementCtx,
+): void {
+  if (!v.diasFuerza) return;
+  const error = validateStrengthDays(
+    v.diasGym as DiasGym,
+    v.diasFuerza as (typeof WEEK_DAYS)[number][],
+  );
+  if (error) ctx.addIssue({ code: "custom", message: error, path: ["diasFuerza"] });
+}
+
+export const trainingSchema = trainingFields.superRefine(refineStrengthDays);
+
+export const onboardingSchema = trainingFields
+  .extend({
+    edad: z.number().int().min(10).max(100),
+    alturaCm: z.number().finite().min(100).max(250),
+    sexo: z.enum(["M", "F"]),
+    pesoInicialKg: z.number().finite().min(30).max(300),
+    factorActividad: z.number().finite().min(1).max(2.5).default(1.55),
+    metaPesoKg: z.number().finite().min(30).max(300).nullish(),
+    metaGrasaPct: z.string().trim().max(20).nullish(),
+    calibracionPesoKg: z.number().finite().min(30).max(300).nullish(),
+    calibracionBmrKcal: z.number().finite().min(500).max(6000).nullish(),
+    eventos: z.array(eventoSchema).min(1, "Agregá al menos un evento"),
+  })
+  .superRefine(refineStrengthDays);

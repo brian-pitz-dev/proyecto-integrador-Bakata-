@@ -28,7 +28,9 @@ export function NumericLogForm({
   const { pending, formRef, submit } = useLogSubmit(successMessage);
   const fieldId = `${categoria}-valor`;
   const dateId = `${categoria}-fecha`;
-  const defaultDate = toISO(defaultToYesterday ? addDays(todayNormalized(), -1) : todayNormalized());
+  const defaultDate = toISO(
+    defaultToYesterday ? addDays(todayNormalized(), -1) : todayNormalized(),
+  );
 
   async function handleSubmit(formData: FormData) {
     const valor = Number(formData.get("valor"));

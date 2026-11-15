@@ -1,4 +1,5 @@
 const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const DUMMY_SECRET = /^[123]x0+AA$/;
 
 /**
  * Canonical server-side Turnstile check (Cloudflare Turnstile Spin, Step 9):
@@ -44,6 +45,14 @@ export async function verifyTurnstileToken(
   } catch {
     return false;
   }
+
+  // Las claves de prueba de Cloudflare (1x/2x/3x000…AA) responden siempre con datos
+  // fijos de ejemplo (hostname "example.com", action "test"), así que el chequeo de
+  // action/hostname nunca podría pasar con ellas. Solo se relaja en desarrollo: en
+  // producción se usa la clave real y se exige todo.
+  const usingDummySecret =
+    process.env.NODE_ENV !== "production" && DUMMY_SECRET.test(process.env.TURNSTILE_SECRET ?? "");
+  if (usingDummySecret) return result.success === true;
 
   return (
     result.success === true &&

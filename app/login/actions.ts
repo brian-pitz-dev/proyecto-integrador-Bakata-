@@ -44,6 +44,15 @@ export async function login(input: {
     password: parsed.data.password,
   });
 
+  // Supabase solo devuelve este código si el email y la contraseña son correctos, así que
+  // avisarlo no ayuda a adivinar contraseñas — y evita confundirlo con un error de tipeo.
+  if (error?.code === "email_not_confirmed") {
+    return {
+      ok: false,
+      message: "Tenés que confirmar tu email antes de entrar. Revisá tu casilla (y spam).",
+    };
+  }
+
   if (error) {
     recordFailedAttempt(clientKey);
     return { ok: false, message: "Email o contraseña incorrectos." };

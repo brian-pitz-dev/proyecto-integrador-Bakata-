@@ -7,6 +7,7 @@ import { onboardingSchema } from "@/lib/validation/onboarding";
 import { toISO, todayNormalized } from "@/lib/date";
 import type { ActionResult } from "@/lib/types";
 import type { z } from "zod";
+import { isMissingColumnError } from "@/lib/supabase/errors";
 
 type OnboardingInput = z.infer<typeof onboardingSchema>;
 
@@ -24,7 +25,7 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
 
   const supabase = await createClient();
 
-  const { error: perfilError } = await supabase.from("perfil").upsert({
+  const perfilBase = {
     user_id: user.id,
     edad: data.edad,
     altura_cm: data.alturaCm,
@@ -36,7 +37,20 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
     calibracion_peso_kg: data.calibracionPesoKg ?? null,
     calibracion_bmr_kcal: data.calibracionBmrKcal ?? null,
     plan_start: toISO(todayNormalized()),
+  };
+  let { error: perfilError } = await supabase.from("perfil").upsert({
+    ...perfilBase,
+    nivel: data.nivel,
+    objetivo: data.objetivo,
+    dias_gym: data.diasGym,
+    dias_fuerza: data.diasFuerza ?? null,
+    lugar: data.lugar,
   });
+  // Si la base todavía no tiene la migración 20261115120000_perfil_entrenamiento.sql,
+  // guardar el resto del perfil igual: el plan usa los valores por defecto hasta que exista.
+  if (isMissingColumnError(perfilError)) {
+    ({ error: perfilError } = await supabase.from("perfil").upsert(perfilBase));
+  }
   if (perfilError) {
     return { ok: false, message: "No se pudo guardar el perfil: " + perfilError.message };
   }

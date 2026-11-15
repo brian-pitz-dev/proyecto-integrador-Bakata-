@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { CalendarGrid } from "@/components/calendar-grid/calendar-grid";
 import { createClient } from "@/lib/supabase/server";
 import { getUserPlanContext } from "@/lib/user-plan";
-import { EVENT_CARDS, RULE_CARDS } from "@/lib/plan-content";
+import { RULE_CARDS, buildEventGuide } from "@/lib/plan-content";
+import { fromISO, todayNormalized } from "@/lib/date";
+import { PageHeader } from "@/components/page-header";
+import { TrainingPrefsDialog } from "@/components/training/training-prefs-dialog";
+import { SURFACE } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Calendario · Bakata",
@@ -25,18 +30,29 @@ export default async function CalendarioPage() {
 
   if (!planContext) return null; // proxy.ts ya redirige a /onboarding antes de esto
 
+  const today = todayNormalized();
+  const eventGuides = planContext.events
+    .filter((e) => fromISO(e.fecha) >= today)
+    .map(buildEventGuide);
+
   return (
-    <div className="grid gap-8">
-      <h1 className="mx-auto w-full max-w-4xl text-4xl font-bold">Calendario</h1>
+    <div className="grid gap-14">
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="grid gap-5">
+          <PageHeader title="Calendario" description="Tu plan de la semana, día por día." />
+          <TrainingPrefsDialog training={planContext.training} />
+        </div>
+      </div>
       <CalendarGrid
         completedDates={completedDates}
         weeks={planContext.weeks}
         events={planContext.events}
+        training={planContext.training}
       />
 
-      <div className="mx-auto grid w-full max-w-4xl gap-3">
-        {EVENT_CARDS.map((event) => (
-          <details key={event.title} className="rounded-xl p-4 ring-1 ring-foreground/10">
+      <div className="mx-auto grid w-full max-w-4xl gap-4">
+        {eventGuides.map((event) => (
+          <details key={`${event.title}-${event.dateLabel}`} className={cn(SURFACE, "p-6")}>
             <summary className="cursor-pointer font-heading text-lg font-semibold">
               Guía: {event.title}
             </summary>
@@ -51,7 +67,7 @@ export default async function CalendarioPage() {
           </details>
         ))}
 
-        <details className="rounded-xl p-4 ring-1 ring-foreground/10">
+        <details className={cn(SURFACE, "p-6")}>
           <summary className="cursor-pointer font-heading text-lg font-semibold">
             Reglas del plan
           </summary>

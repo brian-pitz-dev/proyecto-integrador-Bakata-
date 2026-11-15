@@ -2,7 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getAuthedUser } from "@/lib/supabase/auth";
-import { buildPlan, type Week, type UserEvent } from "@/lib/training-plan";
+import { buildPlan, personalizeWeeks, type Week, type UserEvent } from "@/lib/training-plan";
+import { trainingProfileFromRow, type TrainingProfile } from "@/lib/training-profile";
 import { todayNormalized } from "@/lib/date";
 import type { UserProfile } from "@/lib/calorie-target";
 
@@ -17,6 +18,8 @@ export interface UserPlanContext {
   profile: Perfil;
   events: UserEvent[];
   weeks: Week[];
+  /** Nivel, objetivo, días de fuerza y lugar: adaptan rutinas y días de gym (lib/personalize.ts). */
+  training: TrainingProfile;
 }
 
 /** null si no hay sesión o todavía no completó el onboarding (proxy.ts ya debería haber redirigido antes de llegar acá). */
@@ -57,7 +60,8 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
     detalle: e.detalle,
   }));
 
-  const weeks = buildPlan(profile.planStart, events, todayNormalized());
+  const training = trainingProfileFromRow(perfilRow, profile.edad);
+  const weeks = personalizeWeeks(buildPlan(profile.planStart, events, todayNormalized()), training);
 
-  return { profile, events, weeks };
+  return { profile, events, weeks, training };
 }

@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertBadge } from "@/components/stats/alert-badge";
+import { PageHeader } from "@/components/page-header";
+import { HIGHLIGHT, SURFACE } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 import { RegistroCategoryCard } from "@/components/log-form/registro-category-card";
 import { RunForm } from "@/components/log-form/run-form";
 import { NumericLogForm } from "@/components/log-form/numeric-log-form";
@@ -129,8 +132,11 @@ export default async function EstadisticasPage() {
   ];
 
   return (
-    <div className="grid gap-8">
-      <h1 className="text-4xl font-bold">Estadísticas</h1>
+    <div className="mx-auto grid w-full max-w-5xl gap-12">
+      <PageHeader
+        title="Estadísticas"
+        description="Cómo venís con el plan: entrenamientos, ritmo, peso y descanso."
+      />
 
       {gymAtRisk || missingYesterdayItems.length > 0 ? (
         <div className="grid gap-2">
@@ -153,19 +159,38 @@ export default async function EstadisticasPage() {
           />
         </div>
       ) : (
-        <p className="flex items-center gap-2 text-sm">
+        <p className="flex w-fit items-center gap-2 rounded-full bg-accent/12 px-4 py-2 text-sm font-medium">
           <CircleCheck className="size-4 text-accent" aria-hidden="true" />
           Todo al día: cargaste los datos de ayer y venís cumpliendo el gym.
         </p>
       )}
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <h2 className="sr-only">Resumen</h2>
-        {statBoxes.map((box) => (
-          <div key={box.label} className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-            <box.icon className="size-4 text-primary" aria-hidden="true" />
-            <p className="font-heading mt-2 text-3xl font-semibold tabular-nums">{box.value}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{box.label}</p>
+        {statBoxes.map((box, i) => (
+          <div
+            key={box.label}
+            className={cn("p-6", i === 0 ? cn(HIGHLIGHT, "rounded-[20px]") : SURFACE)}
+          >
+            <span
+              className={cn(
+                "grid size-9 place-items-center rounded-xl",
+                i === 0
+                  ? "bg-primary text-primary-foreground dark:bg-white/15 dark:text-white"
+                  : "bg-primary/12 text-primary dark:bg-primary/20 dark:text-[#d6b8f2]",
+              )}
+            >
+              <box.icon className="size-4" aria-hidden="true" />
+            </span>
+            <p className="mt-3 font-heading text-3xl font-semibold tabular-nums">{box.value}</p>
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                i === 0 ? "text-muted-foreground dark:text-white/75" : "text-muted-foreground",
+              )}
+            >
+              {box.label}
+            </p>
           </div>
         ))}
       </section>
@@ -180,7 +205,7 @@ export default async function EstadisticasPage() {
         </CardHeader>
         <CardContent>
           {weightProgress ? (
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               <div className="flex flex-wrap justify-between gap-2 text-sm tabular-nums">
                 <span>
                   Inicio: <strong>{weightProgress.start.toFixed(1)} kg</strong>
@@ -192,9 +217,9 @@ export default async function EstadisticasPage() {
                   Meta: <strong>{weightProgress.target} kg</strong>
                 </span>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-accent"
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#c294dc,#8d3fbd)]"
                   style={{ width: `${weightProgress.pct.toFixed(0)}%` }}
                 />
               </div>
@@ -213,9 +238,9 @@ export default async function EstadisticasPage() {
         </CardContent>
       </Card>
 
-      <section className="grid gap-4">
+      <section className="grid gap-5">
         <h2 className="text-2xl font-semibold">Registros</h2>
-        <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <RegistroCategoryCard
             icon={<Scale className="size-4" aria-hidden="true" />}
             title="Peso"
@@ -283,18 +308,18 @@ export default async function EstadisticasPage() {
       </section>
 
       {monthHistory.length > 0 && (
-        <section className="grid gap-3">
+        <section className="grid gap-5">
           <h2 className="text-2xl font-semibold">Días entrenados por mes</h2>
-          <ul className="grid gap-2">
+          <ul className={cn(SURFACE, "grid gap-4 p-6")}>
             {monthHistory.map((m) => (
               <li
                 key={m.label}
                 className="grid grid-cols-[5rem_1fr_3.5rem] items-center gap-3 text-sm"
               >
                 <span className="capitalize">{m.label}</span>
-                <span className="h-2 overflow-hidden rounded-full bg-muted">
+                <span className="h-2.5 overflow-hidden rounded-full bg-muted">
                   <span
-                    className="block h-full rounded-full bg-accent"
+                    className="block h-full rounded-full bg-[linear-gradient(90deg,#c294dc,#8d3fbd)]"
                     style={{ width: `${m.trainable ? (m.completed / m.trainable) * 100 : 0}%` }}
                   />
                 </span>

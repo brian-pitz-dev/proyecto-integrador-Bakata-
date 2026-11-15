@@ -10,6 +10,8 @@ import type { CalorieTarget } from "@/lib/calorie-target";
 import { WeekSelector } from "@/components/week-selector/week-selector";
 import { MealCard } from "@/components/nutrition/meal-card";
 import { FixedRules } from "@/components/nutrition/fixed-rules";
+import { PageHeader } from "@/components/page-header";
+import { HIGHLIGHT, SURFACE } from "@/lib/styles";
 
 function currentDayIdx(today: Date): number {
   const jsDay = today.getDay();
@@ -51,17 +53,15 @@ export function NutricionClient({ weeks }: { weeks: Week[] }) {
   }, [week, day, weeks]);
 
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-5">
-      <div>
-        <h1 className="text-4xl font-bold">Nutrición</h1>
-        <p className="max-w-prose text-muted-foreground">
-          Cuatro comidas de lunes a viernes con el método del plato. El menú rota cada semana.
-        </p>
-      </div>
+    <div className="mx-auto grid w-full max-w-4xl gap-10">
+      <PageHeader
+        title="Nutrición"
+        description="Cuatro comidas de lunes a viernes con el método del plato. El menú rota cada semana."
+      />
 
       <WeekSelector weeks={weeks} selectedWeek={week} onSelectWeek={handleSelectWeek} />
 
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
         {WEEKDAY_LABELS.map((label, i) => (
           <button
             key={label}
@@ -69,11 +69,11 @@ export function NutricionClient({ weeks }: { weeks: Week[] }) {
             onClick={() => setDay(i)}
             aria-pressed={day === i}
             className={cn(
-              "rounded-md border py-1.5 text-center text-sm transition-colors",
+              "rounded-2xl border py-2 text-center text-sm transition-colors",
               day === i
-                ? "border-primary bg-primary/15 font-semibold"
-                : "border-border text-muted-foreground hover:bg-muted",
-              i >= 5 && day !== i && "border-dashed",
+                ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
+              i >= 5 && day !== i && "border-dashed opacity-70",
             )}
           >
             <span className="block text-xs">{label.slice(0, 3)}</span>
@@ -86,23 +86,32 @@ export function NutricionClient({ weeks }: { weeks: Week[] }) {
 
       {dayPlan.isWeekday ? (
         <div className="grid gap-4">
+          <div className={cn("mb-2 grid gap-4", calorieTarget && "sm:grid-cols-2")}>
+            <div className={cn(HIGHLIGHT, "rounded-[20px] p-6")}>
+              <p className="text-sm text-muted-foreground dark:text-white/75">Proteína del día</p>
+              <p className="font-heading text-3xl font-semibold text-primary tabular-nums dark:text-white">
+                {dayPlan.totalProteinG.toFixed(1)} g
+              </p>
+            </div>
+            {calorieTarget && (
+              <div className={cn(SURFACE, "p-6")}>
+                <p className="text-sm text-muted-foreground">
+                  Meta calórica · {calorieTarget.fuente === "xiaomi" ? "BMR + activas" : "estimado"}
+                </p>
+                <p className="font-heading text-3xl font-semibold tabular-nums">
+                  {calorieTarget.meta} kcal
+                </p>
+              </div>
+            )}
+          </div>
           {dayPlan.meals.map((meal) => (
             <MealCard key={meal.type} meal={meal} />
           ))}
-          <div className="grid gap-1 rounded-lg bg-muted/50 px-4 py-3 text-sm font-medium tabular-nums">
-            <p>Total del día: {dayPlan.totalProteinG.toFixed(1)} g de proteína</p>
-            {calorieTarget && (
-              <p>
-                Meta calórica ({calorieTarget.fuente === "xiaomi" ? "BMR + activas" : "estimado"}):{" "}
-                {calorieTarget.meta} kcal
-              </p>
-            )}
-          </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-          El fin de semana no tiene menú fijo. Antes del 21K, seguí la guía de carga de
-          carbohidratos del Calendario.
+        <div className="rounded-[20px] border border-dashed border-border p-6 text-sm text-muted-foreground">
+          El fin de semana no tiene menú fijo. Antes de una carrera o caminata, seguí la guía de tu
+          evento al pie del Calendario.
         </div>
       )}
 

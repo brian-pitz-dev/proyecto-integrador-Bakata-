@@ -10,6 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { completeOnboarding } from "@/app/onboarding/actions";
 import { addDays, toISO, todayNormalized } from "@/lib/date";
+import {
+  TrainingFields,
+  readTrainingFields,
+  trainingFieldsError,
+} from "@/components/training/training-fields";
 
 interface EventoDraft {
   tipo: "carrera" | "caminata";
@@ -59,6 +64,13 @@ export function OnboardingForm() {
       return;
     }
 
+    const training = readTrainingFields(formData);
+    const trainingError = trainingFieldsError(training);
+    if (trainingError) {
+      toast.error(trainingError);
+      return;
+    }
+
     setPending(true);
     const result = await completeOnboarding({
       edad: num("edad") ?? 0,
@@ -70,6 +82,7 @@ export function OnboardingForm() {
       metaGrasaPct: (formData.get("metaGrasaPct") as string) || null,
       calibracionPesoKg: num("calibracionPesoKg") ?? null,
       calibracionBmrKcal: num("calibracionBmrKcal") ?? null,
+      ...training,
       eventos: eventosPayload,
     });
     setPending(false);
@@ -151,6 +164,16 @@ export function OnboardingForm() {
               <Label htmlFor="metaGrasaPct">Meta de % de grasa (opcional)</Label>
               <Input id="metaGrasaPct" name="metaGrasaPct" type="text" placeholder="ej. 14-15%" />
             </div>
+          </div>
+
+          <div className="grid gap-4 border-t border-border pt-6">
+            <div className="grid gap-1">
+              <h2 className="text-lg font-semibold">Tu entrenamiento</h2>
+              <p className="text-sm text-muted-foreground">
+                Con esto adaptamos series, repeticiones, ejercicios y días de fuerza a vos.
+              </p>
+            </div>
+            <TrainingFields />
           </div>
 
           <details className="rounded-lg border border-border p-3">
