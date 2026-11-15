@@ -77,10 +77,10 @@ export function PerfilClient({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-6">
+    <div className="mx-auto grid w-full max-w-4xl gap-10">
       <div>
-        <h1 className="text-4xl font-bold">Mi perfil</h1>
-        <p className="max-w-prose text-muted-foreground">
+        <h1 className="text-4xl font-bold sm:text-5xl">Mi perfil</h1>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-muted-foreground">
           Tus datos, cuándo podés entrenar y para qué te estás preparando. Al guardar, tu plan y tus
           calorías se recalculan solos.
         </p>

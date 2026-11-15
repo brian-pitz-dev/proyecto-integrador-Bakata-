@@ -78,10 +78,12 @@ export function LogDialog({
   title,
   buttonLabel,
   children,
+  triggerClassName,
 }: {
   title: string;
   buttonLabel: string;
   children: ReactNode;
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -90,7 +92,9 @@ export function LogDialog({
   return (
     // Escape, la X o un clic afuera no cierran mientras guarda: el usuario ve el spinner hasta el final
     <Dialog open={open} onOpenChange={(o) => (o || !guardando) && setOpen(o)}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>+ {buttonLabel}</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" className={triggerClassName} />}>
+        + {buttonLabel}
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -126,8 +130,10 @@ export function RegistroCategoryCard({
   return (
     <Card className={className}>
       <CardHeader className="flex items-center justify-between gap-2 border-b">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          {icon}
+        <CardTitle className="flex items-center gap-2.5 text-lg font-semibold">
+          <span className="grid size-8 place-items-center rounded-xl bg-primary/12 text-primary dark:bg-primary/20 dark:text-[#d6b8f2]">
+            {icon}
+          </span>
           {title}
         </CardTitle>
         <LogDialog title={title} buttonLabel={buttonLabel}>
@@ -138,9 +144,9 @@ export function RegistroCategoryCard({
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no cargaste nada acá.</p>
         ) : (
-          <ul className="-my-1 divide-y divide-border">
+          <ul className="-my-2 divide-y divide-border">
             {entries.map((entry) => (
-              <li key={entry.id} className="flex items-center gap-3 py-1 text-sm">
+              <li key={entry.id} className="flex items-center gap-3 py-2 text-sm">
                 <span className="min-w-0 flex-1 break-words tabular-nums">{entry.label}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">{entry.date}</span>
                 <DeleteLogButton id={entry.id} />

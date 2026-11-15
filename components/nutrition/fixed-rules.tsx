@@ -1,10 +1,12 @@
 import { FIXED_RULES } from "@/lib/meal-plan";
+import { SURFACE } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 
 export function FixedRules() {
   return (
-    <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
-      <p className="mb-1.5 font-medium text-foreground">Reglas fijas</p>
-      <ul className="grid gap-1 list-disc pl-4">
+    <div className={cn(SURFACE, "p-6 text-sm text-muted-foreground")}>
+      <p className="mb-3 font-heading text-lg font-semibold text-foreground">Reglas fijas</p>
+      <ul className="grid list-disc gap-2 pl-4 marker:text-primary">
         {FIXED_RULES.map((rule) => (
           <li key={rule}>{rule}</li>
         ))}

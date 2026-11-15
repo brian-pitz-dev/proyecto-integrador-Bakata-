@@ -38,7 +38,7 @@ export function WeekSelector({ weeks, selectedWeek, onSelectWeek }: WeekSelector
           value={selectedMonth}
           onChange={setSelectedMonth}
           items={monthsInPlan}
-          className="h-9 w-fit min-w-36 font-medium"
+          className="h-10 w-fit min-w-36 rounded-full bg-card px-4 font-medium capitalize shadow-sm"
         />
 
         <div className="flex flex-wrap gap-1.5">
@@ -50,10 +50,10 @@ export function WeekSelector({ weeks, selectedWeek, onSelectWeek }: WeekSelector
               title={w.phaseLabel}
               aria-pressed={w.num === selectedWeek}
               className={cn(
-                "min-w-14 rounded-md border px-2.5 py-2 text-sm font-medium tabular-nums transition-colors",
+                "min-w-16 rounded-full border px-4 py-2 text-sm font-medium tabular-nums transition-colors",
                 w.num === selectedWeek
-                  ? "border-primary bg-primary/15 text-foreground"
-                  : "border-border text-muted-foreground hover:bg-muted",
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
                 w.isEventWeek && "ring-2 ring-destructive/50",
                 w.isPrepWeek && !w.isEventWeek && "ring-2 ring-accent/60",
               )}

@@ -27,12 +27,12 @@ export function EventosResumen({ events }: { events: UserEvent[] }) {
   const proximo = ordenados.find((e) => !cuando(e.fecha).pasado);
 
   return (
-    <section aria-labelledby="tus-eventos" className="mx-auto grid w-full max-w-4xl gap-3">
-      <h2 id="tus-eventos" className="text-xl font-semibold">
+    <section aria-labelledby="tus-eventos" className="mx-auto grid w-full max-w-4xl gap-4">
+      <h2 id="tus-eventos" className="text-2xl font-semibold">
         Tus eventos
       </h2>
       {!proximo && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary/10 p-4 ring-1 ring-primary/50">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-primary/10 p-5 ring-1 ring-primary/40">
           <div className="grid gap-1">
             <p className="flex items-center gap-2 font-semibold">
               <Flag className="size-4 text-primary" aria-hidden="true" />
@@ -48,7 +48,7 @@ export function EventosResumen({ events }: { events: UserEvent[] }) {
           </Link>
         </div>
       )}
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ordenados.map((ev) => {
           const { texto, pasado } = cuando(ev.fecha);
           const Icon = ev.tipo === "carrera" ? Medal : Footprints;
@@ -56,8 +56,10 @@ export function EventosResumen({ events }: { events: UserEvent[] }) {
             <li
               key={ev.id}
               className={cn(
-                "grid gap-1 rounded-xl p-4 ring-1",
-                ev === proximo ? "bg-primary/10 ring-primary/50" : "ring-foreground/10",
+                "grid gap-1 rounded-[20px] p-5 ring-1",
+                ev === proximo
+                  ? "bg-primary/10 ring-primary/40"
+                  : "bg-card shadow-[0_2px_8px_0_rgba(92,53,116,0.08)] ring-foreground/5 dark:ring-white/10",
                 pasado && "opacity-60",
               )}
             >
