@@ -41,6 +41,8 @@ export const signupLimiter = limiter(5 * 60 * 1000, 5);
 export const recuperarLimiter = limiter(15 * 60 * 1000, 5);
 /** saveLog: 20 registros por minuto, por usuario. */
 export const saveLogLimiter = limiter(60 * 1000, 20);
+/** Cargas por ejercicio: 60 por minuto, por usuario (una rutina tiene ~6 ejercicios). */
+export const cargaLimiter = limiter(60 * 1000, 60);
 /** Coach: 5 llamadas por minuto, por usuario (protege el límite por minuto del tier gratis de Gemini). */
 export const coachLimiter = limiter(60 * 1000, 5);
 /** Strava: 3 importaciones por minuto, por usuario (la API de Strava da 100 pedidos cada 15'). */

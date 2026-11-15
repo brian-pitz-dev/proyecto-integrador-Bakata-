@@ -5,14 +5,33 @@ import { getUserPlanContext } from "@/lib/user-plan";
 import { getAuthedUser } from "@/lib/supabase/auth";
 import { guiaEvento, RULE_CARDS } from "@/lib/plan-content";
 import { EventosResumen } from "@/components/eventos-resumen";
-import { toISO, todayNormalized } from "@/lib/date";
+import { addDays, toISO, todayNormalized } from "@/lib/date";
+import { CATEGORIA_CARGA, type Carga } from "@/lib/validation/carga";
 import { HeartPulse } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { SURFACE } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Calendario · Bakata",
   description: "Plan de entrenamiento semana a semana: sesiones, fases y eventos.",
   alternates: { canonical: "/calendario" },
 };
+
+/** Pesos anotados por ejercicio en el último año (sobrecarga progresiva). */
+async function fetchCargas(): Promise<Carga[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("registro")
+    .select("fecha, valor, nota")
+    .eq("categoria", CATEGORIA_CARGA)
+    .gte("fecha", toISO(addDays(todayNormalized(), -365)))
+    .order("fecha", { ascending: false })
+    .limit(1000);
+  return (data ?? [])
+    .filter((r) => r.nota)
+    .map((r) => ({ fecha: r.fecha as string, ejercicio: r.nota as string, kg: Number(r.valor) }));
+}
 
 /** Equivalente a getCompletedDates() de plan_vida_2026.html. */
 async function fetchCompletedDates(): Promise<string[]> {
@@ -22,8 +41,9 @@ async function fetchCompletedDates(): Promise<string[]> {
 }
 
 export default async function CalendarioPage() {
-  const [completedDates, planContext, user] = await Promise.all([
+  const [completedDates, cargas, planContext, user] = await Promise.all([
     fetchCompletedDates(),
+    fetchCargas(),
     getUserPlanContext(),
     getAuthedUser(),
   ]);
@@ -36,16 +56,22 @@ export default async function CalendarioPage() {
   const guia = proximo ? guiaEvento(proximo) : null;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-14">
       <div className="mx-auto w-full max-w-4xl">
-        {user?.nombre && <p className="text-muted-foreground">Hola, {user.nombre}</p>}
-        <h1 className="text-4xl font-bold">Calendario</h1>
+        <PageHeader
+          title="Calendario"
+          description={
+            user?.nombre
+              ? `Hola, ${user.nombre}. Tu plan de la semana, día por día.`
+              : "Tu plan de la semana, día por día."
+          }
+        />
       </div>
       <EventosResumen events={planContext.events} />
       {planContext.retome && (
         <p
           role="status"
-          className="mx-auto flex w-full max-w-4xl items-start gap-2 rounded-xl bg-accent/10 p-4 text-sm ring-1 ring-accent/40"
+          className="mx-auto flex w-full max-w-4xl items-start gap-2 rounded-[20px] bg-accent/10 p-5 text-sm ring-1 ring-accent/40"
         >
           <HeartPulse className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
           <span>
@@ -61,11 +87,12 @@ export default async function CalendarioPage() {
         weeks={planContext.weeks}
         events={planContext.events}
         routines={planContext.planIa.ejercicios}
+        cargas={cargas}
       />
 
-      <div className="mx-auto grid w-full max-w-4xl gap-3">
+      <div className="mx-auto grid w-full max-w-4xl gap-4">
         {guia && (
-          <details className="rounded-xl p-4 ring-1 ring-foreground/10">
+          <details className={cn(SURFACE, "p-6")}>
             <summary className="cursor-pointer font-heading text-lg font-semibold">
               Guía para el día: {guia.title}
             </summary>
@@ -80,7 +107,7 @@ export default async function CalendarioPage() {
           </details>
         )}
 
-        <details className="rounded-xl p-4 ring-1 ring-foreground/10">
+        <details className={cn(SURFACE, "p-6")}>
           <summary className="cursor-pointer font-heading text-lg font-semibold">
             Reglas del plan
           </summary>
