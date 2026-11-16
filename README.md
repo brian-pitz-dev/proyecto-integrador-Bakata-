@@ -1,6 +1,6 @@
 # Bakata
 
-[![CI](https://github.com/brian-pitz-dev/proyecto-integrador/actions/workflows/ci.yml/badge.svg)](https://github.com/brian-pitz-dev/proyecto-integrador/actions/workflows/ci.yml)
+[![CI](https://github.com/brian-pitz-dev/proyecto-integrador-Bakata-/actions/workflows/ci.yml/badge.svg)](https://github.com/brian-pitz-dev/proyecto-integrador-Bakata-/actions/workflows/ci.yml)
 
 **Demo:** https://bakata.netlify.app
 
