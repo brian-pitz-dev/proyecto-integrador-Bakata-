@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { edadDesde, toISO, todayNormalized } from "@/lib/date";
+import { preferenciasSchema } from "@/lib/validation/coach";
 
 // Los mismos schemas validan cada paso del registro en el cliente y el envío completo en el server.
 
@@ -102,19 +103,55 @@ export const eventoSchema = z.object({
     .nullish(),
 });
 
-/** Paso 3: eventos. */
-export const eventosSchema = z.array(eventoSchema).min(1, "Agregá al menos un evento");
+/** Paso 3: eventos. Opcionales salvo que el objetivo sea un evento (ver conEventoSiHaceFalta). */
+export const eventosSchema = z.array(eventoSchema).max(20);
 
-/** /onboarding: cuenta ya creada, solo perfil + eventos. */
-export const onboardingSchema = perfilSchema.extend({ eventos: eventosSchema });
+const MSG_EVENTO = "Agregá al menos un evento (o elegí otro objetivo)";
+
+const MSG_META = "Contanos a qué peso querés llegar";
+
+/** Para bajar de peso o ganar músculo hace falta la meta de peso (decide las calorías). */
+export function faltaMeta(objetivo: string | undefined, metaPesoKg: number | null | undefined) {
+  return (objetivo === "musculo" || objetivo === "bajar") && !metaPesoKg;
+}
+
+/** Si entrena para un evento, tiene que cargar al menos uno. */
+export function faltaEvento(objetivo: string | undefined, eventos: readonly unknown[]): boolean {
+  return objetivo === "evento" && eventos.length === 0;
+}
+
+/** Paso 4: lo que la IA necesita para armar el plan (qué no come, zonas, equipo). Todo opcional. */
+const preferenciasPaso = preferenciasSchema.default({ noCome: "", zonas: [], equipo: "" });
+
+/** /onboarding: cuenta ya creada, solo perfil + eventos + preferencias. */
+export const onboardingSchema = perfilSchema
+  .extend({ eventos: eventosSchema, preferencias: preferenciasPaso })
+  .refine((d) => !faltaEvento(d.preferencias.objetivo, d.eventos), {
+    message: MSG_EVENTO,
+    path: ["eventos"],
+  })
+  .refine((d) => !faltaMeta(d.preferencias.objetivo, d.metaPesoKg), {
+    message: MSG_META,
+    path: ["metaPesoKg"],
+  });
 
 /** /signup: el registro completo en un solo envío. */
-export const registroSchema = z.object({
-  cuenta: cuentaSchema,
-  perfil: perfilSchema,
-  eventos: eventosSchema,
-  turnstileToken: z.string().min(1, "Completá la verificación anti-bot"),
-});
+export const registroSchema = z
+  .object({
+    cuenta: cuentaSchema,
+    perfil: perfilSchema,
+    eventos: eventosSchema,
+    preferencias: preferenciasPaso,
+    turnstileToken: z.string().min(1, "Completá la verificación anti-bot"),
+  })
+  .refine((d) => !faltaEvento(d.preferencias.objetivo, d.eventos), {
+    message: MSG_EVENTO,
+    path: ["eventos"],
+  })
+  .refine((d) => !faltaMeta(d.preferencias.objetivo, d.perfil.metaPesoKg), {
+    message: MSG_META,
+    path: ["perfil", "metaPesoKg"],
+  });
 
 export type PerfilInput = z.infer<typeof perfilSchema>;
 export type EventoInput = z.infer<typeof eventoSchema>;

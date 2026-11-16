@@ -3,9 +3,12 @@ import { CalendarGrid } from "@/components/calendar-grid/calendar-grid";
 import { createClient } from "@/lib/supabase/server";
 import { getUserPlanContext } from "@/lib/user-plan";
 import { getAuthedUser } from "@/lib/supabase/auth";
-import { guiaEvento, RULE_CARDS } from "@/lib/plan-content";
+import { leerEstadoPlanIa } from "@/lib/preferencias";
+import { estadoMes, finDelMes, inicioDelMes } from "@/lib/plan-ia";
+import { NuevoMes } from "@/components/nuevo-mes";
+import { guiaEvento, reglasPara } from "@/lib/plan-content";
 import { EventosResumen } from "@/components/eventos-resumen";
-import { addDays, toISO, todayNormalized } from "@/lib/date";
+import { addDays, fromISO, toISO, todayNormalized } from "@/lib/date";
 import { CATEGORIA_CARGA, type Carga } from "@/lib/validation/carga";
 import { HeartPulse } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -41,11 +44,12 @@ async function fetchCompletedDates(): Promise<string[]> {
 }
 
 export default async function CalendarioPage() {
-  const [completedDates, cargas, planContext, user] = await Promise.all([
+  const [completedDates, cargas, planContext, user, { preferencias }] = await Promise.all([
     fetchCompletedDates(),
     fetchCargas(),
     getUserPlanContext(),
     getAuthedUser(),
+    leerEstadoPlanIa(),
   ]);
 
   if (!planContext) return null; // proxy.ts ya redirige a /onboarding antes de esto
@@ -54,6 +58,24 @@ export default async function CalendarioPage() {
   const hoy = toISO(todayNormalized());
   const proximo = planContext.events.find((e) => e.fecha >= hoy);
   const guia = proximo ? guiaEvento(proximo) : null;
+  // objetivo músculo / bajar: rutinas por meses de 4 semanas
+  const porMeses = preferencias.objetivo === "musculo" || preferencias.objetivo === "bajar";
+  const inicioMes = porMeses
+    ? inicioDelMes(
+        preferencias.cicloInicio,
+        planContext.planIa.ejerciciosUpdatedAt,
+        planContext.profile.planStart,
+      )
+    : undefined;
+  const mesTerminado = !!estadoMes(inicioMes, hoy)?.terminado;
+  const reglas = reglasPara({
+    objetivo: preferencias.objetivo,
+    nivelCardio: preferencias.nivelCardio,
+    diasAlEvento: proximo
+      ? Math.round((fromISO(proximo.fecha).getTime() - todayNormalized().getTime()) / 86_400_000)
+      : null,
+    tipoEvento: proximo?.tipo,
+  });
 
   return (
     <div className="grid gap-14">
@@ -67,7 +89,17 @@ export default async function CalendarioPage() {
           }
         />
       </div>
-      <EventosResumen events={planContext.events} />
+      {mesTerminado &&
+        (preferencias.objetivo === "musculo" || preferencias.objetivo === "bajar") && (
+          <NuevoMes
+            objetivo={preferencias.objetivo}
+            zonas={preferencias.zonas}
+            metaPesoKg={planContext.profile.metaPesoKg}
+          />
+        )}
+      {(planContext.events.length > 0 ||
+        preferencias.objetivo === "evento" ||
+        !preferencias.objetivo) && <EventosResumen events={planContext.events} />}
       {planContext.retome && (
         <p
           role="status"
@@ -88,6 +120,9 @@ export default async function CalendarioPage() {
         events={planContext.events}
         routines={planContext.planIa.ejercicios}
         cargas={cargas}
+        nivelGym={preferencias.nivelGym}
+        movimientos={planContext.movimientos}
+        finMes={inicioMes ? finDelMes(inicioMes) : undefined}
       />
 
       <div className="mx-auto grid w-full max-w-4xl gap-4">
@@ -112,7 +147,7 @@ export default async function CalendarioPage() {
             Reglas del plan
           </summary>
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            {RULE_CARDS.map((card) => (
+            {reglas.map((card) => (
               <div key={card.title}>
                 <h3 className="font-semibold">{card.title}</h3>
                 <ul className="mt-1 grid list-disc gap-1 pl-4 text-sm text-muted-foreground">

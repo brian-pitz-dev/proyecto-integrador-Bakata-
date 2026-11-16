@@ -6,6 +6,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthedUser } from "@/lib/supabase/auth";
+import { toISO, todayNormalized } from "@/lib/date";
+import { leerEstadoPlanIa } from "@/lib/preferencias";
+import { NIVELES_CARDIO, NIVELES_GYM, OBJETIVOS, ZONAS } from "@/lib/validation/coach";
 import { claveActualSchema, verificarClave } from "@/lib/verificar-clave";
 import { borrarTodasLasFotos } from "@/lib/fotos";
 import { desconectar as desconectarStrava } from "@/lib/strava";
@@ -17,7 +20,6 @@ import {
 } from "@/lib/validation/onboarding";
 import { filaEvento, filaPerfil, mensajeClaveRechazada } from "@/lib/perfil";
 import { registrarCambioDisponibilidad } from "@/lib/training-plan";
-import { todayNormalized } from "@/lib/date";
 import type { ActionResult } from "@/lib/types";
 
 const actualizarSchema = z.object({
@@ -236,4 +238,53 @@ export async function borrarEvento(id: unknown): Promise<ActionResult> {
 
   recalcular();
   return { ok: true };
+}
+
+const objetivoInputSchema = z.object({
+  objetivo: z.enum(OBJETIVOS),
+  zonas: z.array(z.enum(ZONAS)).max(ZONAS.length),
+  nivelCardio: z.enum(NIVELES_CARDIO),
+  kmSemana: z.number().min(0).max(250).nullish(),
+  nivelGym: z.enum(NIVELES_GYM),
+});
+
+/**
+ * Objetivo de entrenamiento y zonas a priorizar (user_metadata.preferencias): el plan se rearma
+ * solo (gym vs. eventos, más días de piernas, core). No usa IA ni consultas.
+ */
+export async function guardarObjetivo(input: {
+  objetivo: string;
+  zonas: string[];
+  nivelCardio: string;
+  kmSemana?: number | null;
+  nivelGym: string;
+}): Promise<ActionResult & { cambioObjetivo?: boolean }> {
+  const user = await getAuthedUser();
+  if (!user) return { ok: false, message: "No autenticado." };
+  const parsed = objetivoInputSchema.safeParse(input);
+  if (!parsed.success)
+    return { ok: false, message: "Elegí tu objetivo y tu nivel de running y de gym." };
+
+  const supabase = await createClient();
+  const { preferencias } = await leerEstadoPlanIa(supabase);
+  // Cambiar de objetivo a mitad de mes se puede: si pasa a músculo / bajar, arranca un mes nuevo
+  // desde esta semana (el resto del plan se reacomoda solo, sin IA).
+  const { objetivo } = parsed.data;
+  const cambioObjetivo = objetivo !== preferencias.objetivo;
+  const nuevoMes = cambioObjetivo && (objetivo === "musculo" || objetivo === "bajar");
+  const hoy = todayNormalized();
+  const { error } = await supabase.auth.updateUser({
+    data: {
+      preferencias: {
+        ...preferencias,
+        ...parsed.data,
+        ...(nuevoMes && { cicloInicio: toISO(hoy) }),
+      },
+    },
+  });
+  if (error) return { ok: false, message: "No se pudo guardar." };
+  // el plan lee las preferencias del JWT (getClaims): se renueva para que el cambio se vea ya
+  await supabase.auth.refreshSession();
+  revalidatePath("/", "layout");
+  return { ok: true, cambioObjetivo };
 }

@@ -27,11 +27,14 @@ export function NutricionClient({
   weeks,
   mealBank,
   planIa,
+  objetivo,
 }: {
   weeks: Week[];
   mealBank?: MealBank;
   /** Tarjeta para armar comidas con IA (se arma en el server con la cuota del día). */
   planIa?: ReactNode;
+  /** Objetivo de entrenamiento (preferencias): elige qué reglas mostrar. */
+  objetivo?: "musculo" | "bajar" | "evento";
 }) {
   const today = todayNormalized();
   const start = today;
@@ -47,7 +50,7 @@ export function NutricionClient({
     pesoKg: calorieTarget?.pesoKg,
     tipoDia: calorieTarget?.tipoDia,
   });
-  // el plan de IA no se ajusta, pero el objetivo de hidratos de la persona se muestra igual
+  // un plan de IA viejo (platos con ingredientes "ia") no se ajusta: el objetivo de hidratos se muestra igual
   const hcMeta =
     dayPlan.hcObjetivoG ??
     (calorieTarget
@@ -126,7 +129,8 @@ export function NutricionClient({
                 value={`${Math.round(dayPlan.totalProteinG)} g`}
                 sub={
                   calorieTarget
-                    ? `objetivo ${Math.round(calorieTarget.pesoKg * PROTEINA_G_POR_KG)} g`
+                    ? // 1,8 g/kg es el objetivo; hasta 2,2 g/kg sigue siendo un rango saludable
+                      `objetivo ${Math.round(calorieTarget.pesoKg * PROTEINA_G_POR_KG)} g · ok hasta ${Math.round(calorieTarget.pesoKg * 2.2)}`
                     : undefined
                 }
               />
@@ -189,7 +193,7 @@ export function NutricionClient({
         ))}
       </div>
 
-      <FixedRules />
+      <FixedRules objetivo={objetivo} tipoDia={calorieTarget?.tipoDia} />
     </div>
   );
 }

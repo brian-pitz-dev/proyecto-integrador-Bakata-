@@ -5,6 +5,7 @@ import {
   mealBank,
   PROTEINA_G_POR_KG,
   hcObjetivo,
+  metasMacros,
   tipoDiaPara,
   portionFactor,
   umbralAlmuerzo,
@@ -54,7 +55,8 @@ describe("plan de comidas", () => {
           expect(dia.totalProteinG, `peso ${peso} semana ${w} día ${d}`).toBeLessThan(
             objetivo * 1.35,
           );
-          expect(dia.totalKcal).toBeLessThanOrEqual(meta * 1.1);
+          // días puntuales pueden pasarse un poco; el promedio lo controla el test de objetivos
+          expect(dia.totalKcal).toBeLessThanOrEqual(meta * 1.15);
           for (const m of dia.meals)
             for (const i of m.meal.ingredientes)
               if (i.id === "huevoFrito") expect((i.cantidad ?? 0) % 50).toBe(0);
@@ -62,18 +64,53 @@ describe("plan de comidas", () => {
     }
   });
 
-  it("hidratos: objetivo según el tipo de día, sin comerse las grasas mínimas", () => {
+  it("macros del día: suman la meta de calorías, grasas entre 0,8 y 1,2 g/kg", () => {
     expect(tipoDiaPara(["rest"], false)).toBe("descanso");
     expect(tipoDiaPara(["core", "gym"], false)).toBe("gym");
     expect(tipoDiaPara(["long"], false)).toBe("fondo");
     expect(tipoDiaPara(["gym"], true)).toBe("carga");
-    expect(hcObjetivo(50, "descanso", 1800)).toBe(150);
-    expect(hcObjetivo(50, "gym", 1800)).toBe(200);
-    // carga 8 g/kg = 400 g, pero con 1800 kcal solo entran 270 g sin bajar de 0,8 g/kg de grasa
-    expect(hcObjetivo(50, "carga", 1800)).toBe(270);
-    const dia = getMealsForDay(2, 0, carbLoad, { pesoKg: 50, metaKcal: 1800, tipoDia: "gym" });
-    expect(dia.hcObjetivoG).toBe(200);
-    expect(dia.totalHcG ?? 0).toBeGreaterThan(200 * 0.7);
+    for (const [peso, meta] of [
+      [50, 1800],
+      [70, 2300],
+      [95, 2700],
+    ] as const)
+      for (const tipo of ["descanso", "gym", "fondo", "carga"] as const) {
+        const m = metasMacros(peso, tipo, meta);
+        expect(Math.round(4 * m.p + 4 * m.h + 9 * m.g)).toBe(meta);
+        expect(m.g).toBeGreaterThanOrEqual(peso * 0.8 - 0.01);
+        expect(m.g).toBeLessThanOrEqual(peso * 1.2 + 0.01);
+        expect(hcObjetivo(peso, tipo, meta)).toBe(Math.round(m.h));
+      }
+    // más entrenamiento → más hidratos (y menos grasas) con las mismas calorías
+    expect(hcObjetivo(70, "fondo", 2300)).toBeGreaterThan(hcObjetivo(70, "descanso", 2300));
+  });
+
+  it("el día armado queda cerca de los objetivos (la mayoría de los días)", () => {
+    for (const [peso, meta] of [
+      [49, 2035],
+      [70, 2300],
+      [95, 2700],
+    ] as const) {
+      let dentro = 0;
+      let dias = 0;
+      for (let w = 1; w <= 20; w++)
+        for (let d = 0; d < 7; d++) {
+          const dia = getMealsForDay(w, d, carbLoad, {
+            pesoKg: peso,
+            metaKcal: meta,
+            tipoDia: "gym",
+          });
+          const m = metasMacros(peso, "gym", meta);
+          const ok =
+            Math.abs(dia.totalProteinG / m.p - 1) <= 0.2 &&
+            Math.abs((dia.totalHcG ?? 0) / m.h - 1) <= 0.2 &&
+            Math.abs((dia.totalGrasaG ?? 0) / m.g - 1) <= 0.25 &&
+            Math.abs(dia.totalKcal / meta - 1) <= 0.1;
+          dias++;
+          if (ok) dentro++;
+        }
+      expect(dentro / dias, `peso ${peso}`).toBeGreaterThanOrEqual(0.8);
+    }
   });
 
   it("banco propio (IA): los totales estimados escalan con el factor", () => {

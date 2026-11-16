@@ -198,10 +198,13 @@ export function CamposPerfil({
   perfil,
   setPerfil,
   errors,
+  sinMeta = false,
 }: {
   perfil: PerfilDraft;
   setPerfil: (p: PerfilDraft) => void;
   errors: Errors;
+  /** En el registro la meta de peso se pide junto con el objetivo. */
+  sinMeta?: boolean;
 }) {
   const minNacimiento = toISO(addDays(todayNormalized(), -100 * 365.25));
   const maxNacimiento = toISO(addDays(todayNormalized(), -13 * 365.25));
@@ -256,20 +259,22 @@ export function CamposPerfil({
             {...invalid(errors, "pesoInicialKg", "pesoInicialKg")}
           />
         </Field>
-        <Field id="metaPesoKg" label="Meta de peso (opcional)" error={errors.metaPesoKg}>
-          <Input
-            id="metaPesoKg"
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            min="30"
-            max="300"
-            placeholder="kg"
-            value={perfil.metaPesoKg}
-            onChange={(e) => setPerfil({ ...perfil, metaPesoKg: e.target.value })}
-            {...invalid(errors, "metaPesoKg", "metaPesoKg")}
-          />
-        </Field>
+        {!sinMeta && (
+          <Field id="metaPesoKg" label="Meta de peso (opcional)" error={errors.metaPesoKg}>
+            <Input
+              id="metaPesoKg"
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              min="30"
+              max="300"
+              placeholder="kg"
+              value={perfil.metaPesoKg}
+              onChange={(e) => setPerfil({ ...perfil, metaPesoKg: e.target.value })}
+              {...invalid(errors, "metaPesoKg", "metaPesoKg")}
+            />
+          </Field>
+        )}
         <Field id="metaGrasaPct" label="Meta de % grasa (opcional)" error={errors.metaGrasaPct}>
           <Input
             id="metaGrasaPct"

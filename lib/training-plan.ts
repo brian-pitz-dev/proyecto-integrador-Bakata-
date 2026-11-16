@@ -8,6 +8,13 @@
 
 import { toISO, fromISO, addDays, isSameDay } from "@/lib/date";
 import { formatPace } from "@/lib/pace";
+import {
+  bloqueEvento,
+  semanaMantenimientoCardio,
+  semanaRecuperacion,
+  semanasRecomendadas,
+  type PerfilCardio,
+} from "@/lib/plan-carrera";
 
 export type SessionTag = "core" | "run" | "gym" | "long" | "walk" | "rest" | "event" | "luj";
 
@@ -304,6 +311,34 @@ function phase6Week(n: number): WeekConfig {
   };
 }
 
+/** Para qué entrena: con "musculo" o "bajar" y sin evento cerca, el plan se centra en el gym. */
+export type ObjetivoEntreno = "musculo" | "bajar" | "evento";
+
+/**
+ * Semana centrada en el gym (objetivo músculo o bajar de peso, sin evento próximo): hasta 5 días
+ * de gym (piernas · empuje · tirón · piernas · superior) y cardio suave; adaptWeek se queda con los
+ * que entran en los días de la persona, primero el gym. Cada 4 semanas, descarga (versiones
+ * livianas). Para bajar de peso, dos de los días son de cardio.
+ */
+function gymWeek(n: number, objetivo: Exclude<ObjetivoEntreno, "evento">): WeekConfig {
+  const descarga = n % 4 === 0;
+  const k = (key: string) => (descarga ? `${key}Light` : key);
+  const superior = n % 2 === 1 ? "empuje" : "tiron";
+  const cardio =
+    objetivo === "bajar"
+      ? cardioSession("Caminata rápida, bici o elíptico · 30-40' a ritmo que te deje hablar")
+      : cardioSession("Caminata o bici suave · 20-30' (opcional)");
+  return {
+    mon: gymSession(k("inferior"), true),
+    tue: gymSession(k("empuje"), true),
+    wed: [cardio],
+    thu: gymSession(k("tiron"), true),
+    fri: gymSession(k("inferior"), true),
+    sat: objetivo === "bajar" ? [cardio] : gymSession(k(superior), true),
+    sun: [restDay()],
+  };
+}
+
 const dowKeys: DayKey[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 /** Fases que preparan un evento: al recortar días, correr pesa más que el gym. */
@@ -311,6 +346,9 @@ const FASES_EVENTO = new Set(["p1", "p2", "p4", "p5"]);
 
 /** Menor = más importante. La salida larga siempre primero; gym empata con correr fuera de las fases de evento. */
 function prioridad(s: Session, phaseKey: string): number {
+  // semana de gym: primero el gym, después el cardio
+  if (phaseKey === "pg")
+    return s.tag === "gym" ? 1 : s.tag === "run" ? 2 : s.tag === "core" ? 3 : 9;
   if (s.tag === "long" || s.tag === "walk" || s.tag === "event" || s.tag === "luj") return 0;
   if (s.tag === "run") return 1;
   if (s.tag === "gym") return FASES_EVENTO.has(phaseKey) ? 2 : 1;
@@ -482,6 +520,34 @@ function pushContentWeeks(
   }
 }
 
+/** Semanas sin evento cerca: mantenimiento de running/caminata o, según el objetivo, de gym. */
+interface SemanaBase {
+  fn: (n: number) => WeekConfig;
+  key: string;
+  /** Etiqueta antes de la preparación de un evento. */
+  antes: string;
+  /** Etiqueta sin eventos próximos. */
+  sinEventos: string;
+}
+
+function semanaBase(objetivo?: ObjetivoEntreno, cardio?: PerfilCardio): SemanaBase {
+  if (objetivo === "musculo" || objetivo === "bajar") {
+    const foco = objetivo === "musculo" ? "Ganar músculo" : "Bajar de peso";
+    return {
+      fn: (n) => gymWeek(n, objetivo),
+      key: "pg",
+      antes: `FASE — ${foco} (antes de la preparación)`,
+      sinEventos: `FASE — ${foco}`,
+    };
+  }
+  return {
+    fn: cardio ? (n) => semanaMantenimientoCardio(n, cardio) : phase6Week,
+    key: "p6",
+    antes: "FASE — Base (antes de la preparación)",
+    sinEventos: "FASE — Base (sin eventos próximos)",
+  };
+}
+
 /** Rellena `weeksAvailable` semanas con contenido `fn`, ideal `ideal` semanas: recorta desde el final si faltan semanas, rellena el frente con mantenimiento si sobran. */
 function pushCompressedBlock(
   out: RawWeek[],
@@ -492,20 +558,12 @@ function pushCompressedBlock(
   fn: (n: number) => WeekConfig,
   phaseKey: string,
   phaseLabel: string,
+  base: SemanaBase,
 ): void {
   if (weeksAvailable >= ideal) {
     const padding = weeksAvailable - ideal;
     if (padding > 0) {
-      pushContentWeeks(
-        out,
-        cursor,
-        wnumRef,
-        padding,
-        phase6Week,
-        1,
-        "p6",
-        "FASE — Base (antes de la preparación)",
-      );
+      pushContentWeeks(out, cursor, wnumRef, padding, base.fn, 1, base.key, base.antes);
     }
     pushContentWeeks(out, cursor, wnumRef, ideal, fn, 1, phaseKey, phaseLabel);
   } else {
@@ -531,7 +589,18 @@ export function buildPlan(
   historial: DisponibilidadPasada[] = [],
   /** Lunes (ISO) de la semana de retome, de semanaDeRetome(). */
   retome?: string,
+  opciones: {
+    /** Sin evento cerca, gym ("musculo"/"bajar") o mantenimiento de running (default). */
+    objetivo?: ObjetivoEntreno;
+    /**
+     * Nivel de running/caminata: con esto las preparaciones se arman con el motor de reglas
+     * (lib/plan-carrera.ts). Sin él, las plantillas de siempre (cuentas anteriores).
+     */
+    cardio?: PerfilCardio;
+  } = {},
 ): Week[] {
+  const { objetivo, cardio } = opciones;
+  const base = semanaBase(objetivo, cardio);
   const pasadas = [...historial].sort((a, b) => (a.hasta < b.hasta ? -1 : 1));
   const sorted = [...events].sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
   const out: RawWeek[] = [];
@@ -549,7 +618,25 @@ export function buildPlan(
     const weeksAvailable = weeksAvailableBetween(cursor.d, eventDate);
     const eventLabel = `rumbo a ${ev.nombre} (${ev.fecha})`;
 
-    if (ev.tipo === "caminata") {
+    if (cardio) {
+      // motor de reglas: largo del bloque según distancia y nivel; si sobra tiempo, antes va base
+      const recomendadas = semanasRecomendadas(ev);
+      const bloque = Math.min(weeksAvailable, recomendadas);
+      const padding = weeksAvailable - bloque;
+      if (padding > 0)
+        pushContentWeeks(out, cursor, wnum, padding, base.fn, 1, base.key, base.antes);
+      for (const semana of bloqueEvento(ev, bloque, cardio))
+        pushContentWeeks(
+          out,
+          cursor,
+          wnum,
+          1,
+          () => semana.cfg,
+          1,
+          semana.phaseKey,
+          semana.phaseLabel,
+        );
+    } else if (ev.tipo === "caminata") {
       pushCompressedBlock(
         out,
         cursor,
@@ -559,6 +646,7 @@ export function buildPlan(
         phase2Week,
         "p2",
         `FASE — Preparación caminata · ${eventLabel}`,
+        base,
       );
     } else if (ev.distanciaKm < CARRERA_LARGA_KM) {
       pushCompressedBlock(
@@ -570,6 +658,7 @@ export function buildPlan(
         phase1Week,
         "p1",
         `FASE — Construcción · ${eventLabel}`,
+        base,
       );
     } else {
       // carrera larga: construcción (ideal 3) + taper (ideal 1, nunca se salta salvo weeksAvailable<=1)
@@ -594,6 +683,7 @@ export function buildPlan(
           (n) => phase4Week(n, ritmosDe(ev)),
           "p4",
           `FASE — Construcción · ${eventLabel}`,
+          base,
         );
         pushContentWeeks(
           out,
@@ -611,15 +701,16 @@ export function buildPlan(
     const next = sorted[i + 1];
     const skipRecovery = ev.tipo === "carrera" && next?.tipo === "caminata";
     if (!skipRecovery) {
+      const rec = cardio ? semanaRecuperacion(ev, cardio) : null;
       pushContentWeeks(
         out,
         cursor,
         wnum,
         1,
-        phase3Week,
+        rec ? () => rec.cfg : phase3Week,
         1,
         "p3",
-        `FASE — Recuperación · post ${ev.nombre}`,
+        rec ? rec.phaseLabel : `FASE — Recuperación · post ${ev.nombre}`,
       );
     }
   }
@@ -630,16 +721,7 @@ export function buildPlan(
   const horizon = addDays(today, 12 * 7);
   const horizonWeeks = Math.ceil((horizon.getTime() - cursor.d.getTime()) / (7 * 86_400_000));
   const maintenanceWeeks = Math.max(horizonWeeks, 4);
-  pushContentWeeks(
-    out,
-    cursor,
-    wnum,
-    maintenanceWeeks,
-    phase6Week,
-    1,
-    "p6",
-    "FASE — Base (sin eventos próximos)",
-  );
+  pushContentWeeks(out, cursor, wnum, maintenanceWeeks, base.fn, 1, base.key, base.sinEventos);
 
   const isoWeeks = out.map((w, i) => {
     const start = toISO(w.start);
@@ -649,7 +731,7 @@ export function buildPlan(
     const esRetome = d !== base;
     const cfg = d ? adaptWeek(w.cfg, w.phaseKey, w.num, d) : w.cfg;
     // Antes del registro no hay sesiones: si no, la alerta de gym (lib/streaks.ts) las cuenta
-    // como salteadas y el calendario deja tildar días que Estadísticas no cuenta.
+    // como salteadas y el calendario deja tildar días que Progreso no cuenta.
     const sinPrevios =
       i === 0 && diasPrevios > 0
         ? { ...cfg, ...Object.fromEntries(dowKeys.slice(0, diasPrevios).map((dk) => [dk, null])) }
@@ -773,4 +855,83 @@ export function getNextEvent(events: UserEvent[], today: Date): UserEvent | null
     .filter((e) => fromISO(e.fecha) >= today)
     .sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
   return upcoming[0] ?? null;
+}
+
+const ZONAS_INFERIOR = new Set(["piernas", "glúteos"]);
+const ZONAS_SUPERIOR = new Set(["espalda", "pecho", "hombros", "brazos"]);
+
+/** Qué rutina va en cada día de gym de la semana, según cuántos días hay (sup = empuje/tirón alternados). */
+const PATRON_GENERAL: Record<number, string[]> = {
+  1: ["inferior"],
+  2: ["inferior", "sup"],
+  3: ["empuje", "inferior", "tiron"],
+  4: ["inferior", "empuje", "inferior", "tiron"],
+  5: ["inferior", "empuje", "tiron", "inferior", "sup"],
+};
+const PATRON_PIERNAS: Record<number, string[]> = {
+  1: ["inferior"],
+  2: ["inferior", "sup"],
+  3: ["inferior", "sup", "inferior"],
+  4: ["inferior", "empuje", "inferior", "tiron"],
+  5: ["inferior", "empuje", "inferior", "tiron", "inferior"],
+};
+
+/**
+ * Reparte las rutinas en los días de gym de cada semana:
+ * - en las semanas de gym (objetivo músculo / bajar), siempre, para que con los días que tenga la
+ *   persona queden equilibradas (con 3 días: empuje · piernas · tirón);
+ * - si prioriza piernas/glúteos (y no el tren superior), en todas las semanas: dos días de piernas
+ *   por cada uno de superior, que alterna empuje y tirón semana a semana.
+ * Respeta las versiones livianas (descarga) y no toca las rutinas específicas de running (inferiorRun).
+ */
+export function priorizarZonas(weeks: Week[], zonas: readonly string[]): Week[] {
+  const piernas =
+    zonas.some((z) => ZONAS_INFERIOR.has(z)) && !zonas.some((z) => ZONAS_SUPERIOR.has(z));
+
+  const ROTABLES = new Set(["empuje", "tiron", "inferior"]);
+  return weeks.map((w) => {
+    if (!piernas && w.phaseKey !== "pg") return w;
+    const slots: { dk: DayKey; i: number; light: boolean }[] = [];
+    for (const dk of dowKeys)
+      (w.cfg[dk] ?? []).forEach((s, i) => {
+        const base = s.gymKey?.replace(/Light$/, "");
+        if (s.tag === "gym" && base && ROTABLES.has(base))
+          slots.push({ dk, i, light: s.gymKey !== base });
+      });
+    if (slots.length === 0) return w;
+
+    const patrones = piernas ? PATRON_PIERNAS : PATRON_GENERAL;
+    const patron = patrones[Math.min(slots.length, 5)];
+    const sup = w.num % 2 === 1 ? "empuje" : "tiron";
+    const cfg = { ...w.cfg };
+    slots.forEach(({ dk, i, light }, n) => {
+      const nombre = patron[n % patron.length];
+      const key = (nombre === "sup" ? sup : nombre) + (light ? "Light" : "");
+      const day = [...(cfg[dk] ?? [])];
+      day[i] = { ...day[i], gymKey: key };
+      cfg[dk] = day;
+    });
+    return { ...w, cfg };
+  });
+}
+
+/**
+ * El "Core en casa" que acompaña a cada día de gym: si la persona no prioriza el core, queda uno
+ * solo por semana (en el primer día de gym). Los días que son solo de core (recuperación,
+ * taper) no se tocan.
+ */
+export function recortarCore(weeks: Week[], zonas: readonly string[]): Week[] {
+  if (zonas.includes("core")) return weeks;
+  const esCoreDeGym = (s: Session) => s.tag === "core" && s.label === "Core en casa";
+  return weeks.map((w) => {
+    let quedoUno = false;
+    const cfg = { ...w.cfg };
+    for (const dk of dowKeys) {
+      const day = cfg[dk];
+      if (!day?.some((s) => s.tag === "gym") || !day.some(esCoreDeGym)) continue;
+      cfg[dk] = quedoUno ? day.filter((s) => !esCoreDeGym(s)) : day;
+      quedoUno = true;
+    }
+    return { ...w, cfg };
+  });
 }

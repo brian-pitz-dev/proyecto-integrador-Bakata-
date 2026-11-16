@@ -7,7 +7,7 @@ import {
   TarjetaCargando,
 } from "@/components/skeletons/piezas";
 
-/** Skeleton del Coach: misma estructura que la página real (tu semana, chat y rutinas con IA). */
+/** Skeleton del Coach: misma estructura que la página real (tu semana, chat y tus rutinas). */
 export default function Loading() {
   return (
     <PaginaCargando label="Cargando coach" className="max-w-4xl gap-10">
@@ -27,7 +27,7 @@ export default function Loading() {
         </div>
       </div>
 
-      {/* Rutinas de gym con IA */}
+      {/* Tus rutinas de gym */}
       <TarjetaCargando>
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: 5 }).map((_, i) => (

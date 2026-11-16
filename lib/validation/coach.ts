@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { Meal } from "@/lib/meal-plan";
 
 export const ZONAS = [
   "piernas",
@@ -35,17 +34,51 @@ export const chatSchema = z
   .max(12)
   .refine((msgs) => msgs.at(-1)?.role === "user", "El último mensaje tiene que ser del usuario");
 
-export const planComidasInputSchema = z.object({
-  texto: z.string().trim().min(3).max(1000),
-  modo: z.enum(["agregar", "reemplazar"]),
+/** Pedido de cambio al plan de comidas (vacío = armarlo con lo que ya sabemos del usuario). */
+export const armarComidasInputSchema = z.object({
+  pedido: z.string().trim().max(1000),
+  /** Armado inicial después del registro: no cuenta en el límite diario (ver AI_DAILY_LIMIT). */
+  inicial: z.boolean().default(false),
 });
 
-export const rutinasInputSchema = z.object({
+export const armarRutinasInputSchema = z.object({
+  pedido: z.string().trim().max(1000),
+  inicial: z.boolean().default(false),
+  /** Rutinas del mes siguiente: tienen que ser distintas a las del mes que terminó. */
+  nuevoMes: z.boolean().default(false),
   equipo: z.string().trim().max(500),
   zonas: z.array(z.enum(ZONAS)).max(ZONAS.length),
 });
 
-export const planIaTipoSchema = z.enum(["comidas", "ejercicios"]);
+/** Mes nuevo de rutinas: objetivo otra vez, zonas, meta de peso (opcional) y algún pedido. */
+export const nuevoMesInputSchema = z.object({
+  objetivo: z.enum(["musculo", "bajar", "evento"]),
+  zonas: z.array(z.enum(ZONAS)).max(ZONAS.length),
+  metaPesoKg: z.number().min(30).max(300).nullable(),
+  pedido: z.string().trim().max(1000),
+});
+
+/** Lo que el usuario contó en el registro para que la IA arme su plan (va en user_metadata). */
+export const OBJETIVOS = ["musculo", "bajar", "evento"] as const;
+export const NIVELES_CARDIO = ["nuevo", "base", "regular"] as const;
+export const NIVELES_GYM = ["principiante", "intermedio", "avanzado"] as const;
+
+export const preferenciasSchema = z.object({
+  /** Para qué entrena (sin dato = cuentas viejas: plan de eventos de siempre). */
+  objetivo: z.enum(OBJETIVOS).optional(),
+  /** Running/caminata: nuevo (no corre), base (corre 20-30' seguidos), regular (corre seguido). */
+  nivelCardio: z.enum(NIVELES_CARDIO).optional(),
+  /** Km por semana que ya corre (solo nivel regular). */
+  kmSemana: z.number().min(0).max(250).nullish(),
+  nivelGym: z.enum(NIVELES_GYM).optional(),
+  /** Lunes en que arrancó su mes de rutinas actual (objetivo músculo / bajar: ciclos de 4 semanas). */
+  cicloInicio: z.iso.date().optional(),
+  noCome: z.string().trim().max(500).default(""),
+  zonas: z.array(z.enum(ZONAS)).max(ZONAS.length).default([]),
+  equipo: z.string().trim().max(500).default(""),
+});
+
+export type Preferencias = z.infer<typeof preferenciasSchema>;
 
 // --- Salida de la IA (también input no confiable: se valida antes de guardar) ---
 
@@ -58,66 +91,39 @@ function shown(max: number, min = 1) {
     .transform((s) => (s.length > max ? `${s.slice(0, max - 1)}…` : s));
 }
 
-const aiMealSchema = z.object({
-  name: shown(80),
-  detail: shown(200, 0),
-  proteinG: z.number().min(0).max(150),
-  kcal: z.number().min(0).max(2000),
-  hcG: z.number().min(0).max(400),
-  grasaG: z.number().min(0).max(200),
+/**
+ * Plato elegido por la IA: uno del catálogo (`nuevo: false`, solo importa el nombre) o uno nuevo
+ * armado con ingredientes del catálogo (`nuevo: true`, ids + gramos de la porción de referencia).
+ * Las cantidades finales las calcula la app (lib/meal-plan.ts) según la persona y el día.
+ */
+const aiPlatoSchema = z.object({
+  nombre: shown(80),
+  nuevo: z.boolean(),
+  detalle: shown(200, 0),
   ingredientes: z
-    .array(
-      z.object({
-        nombre: shown(40),
-        gramos: z.number().min(1).max(1000),
-      }),
-    )
-    .min(1)
+    .array(z.object({ id: z.string().trim().max(40), gramos: z.number().min(0).max(1000) }))
     .max(8),
   carbLoad: z.boolean(),
   liviana: z.boolean(),
 });
 
-function aiBankSchema(min: number, max: number) {
-  const arr = z.array(aiMealSchema).min(min).max(max);
-  return z.object({ desayuno: arr, media: arr, almuerzo: arr, merienda: arr, cena: arr });
-}
+const aiPlatosArr = z.array(aiPlatoSchema).max(8);
+export const aiEleccionComidasSchema = z.object({
+  desayuno: aiPlatosArr,
+  media: aiPlatosArr,
+  almuerzo: aiPlatosArr,
+  merienda: aiPlatosArr,
+  cena: aiPlatosArr,
+});
 
-/** "Agregar al plan": de 0 a 4 platos nuevos por tipo. */
-export const aiMealsAgregarSchema = aiBankSchema(0, 4);
-/**
- * "Armar plan nuevo": se piden 3-5 por tipo, pero se acepta lo que venga (hasta 8) y la action
- * completa con el banco base lo que falte — en el tier gratis la IA a veces devuelve menos.
- */
-export const aiMealsReemplazarSchema = aiBankSchema(0, 8);
-
-export type AiMeal = z.infer<typeof aiMealSchema>;
-
-/** Plato de la IA → Meal de lib/meal-plan.ts (id "ia": sus totales vienen de proteinG/kcal). */
-export function aiMealToMeal(m: AiMeal): Meal {
-  return {
-    name: m.name,
-    detail: m.detail,
-    proteinG: m.proteinG,
-    kcal: m.kcal,
-    hcG: m.hcG,
-    grasaG: m.grasaG,
-    carbLoad: m.carbLoad,
-    liviana: m.liviana,
-    ingredientes: m.ingredientes.map((i) => ({
-      id: "ia",
-      nombre: i.nombre,
-      cantidad: Math.round(i.gramos),
-    })),
-  };
-}
+export type AiEleccionComidas = z.infer<typeof aiEleccionComidasSchema>;
 
 const routineSchema = z.object({
   label: shown(60),
   exercises: z
     .array(
       z.object({
-        name: shown(60),
+        name: shown(90),
         sets: shown(40),
       }),
     )
@@ -125,10 +131,37 @@ const routineSchema = z.object({
     .max(8),
 });
 
+/** Lo que devuelve la IA: por rutina, nombre + ejercicios elegidos del catálogo con sus series. */
 export const routinesSchema = z.object(
   Object.fromEntries(GYM_KEYS.map((k) => [k, routineSchema])) as Record<
     (typeof GYM_KEYS)[number],
     typeof routineSchema
+  >,
+);
+
+export type AiRutinas = z.infer<typeof routinesSchema>;
+
+/** Lo guardado: además, calentamiento, vuelta a la calma y músculos (los completa la app). */
+const storedRoutineSchema = z.object({
+  label: z.string().max(80),
+  warmup: z.string().max(300).optional(),
+  cooldown: z.string().max(300).optional(),
+  exercises: z
+    .array(
+      z.object({
+        name: z.string().max(90),
+        sets: z.string().max(40),
+        muscles: z.string().max(120).optional(),
+      }),
+    )
+    .min(2)
+    .max(8),
+});
+
+export const storedRoutinesSchema = z.object(
+  Object.fromEntries(GYM_KEYS.map((k) => [k, storedRoutineSchema])) as Record<
+    (typeof GYM_KEYS)[number],
+    typeof storedRoutineSchema
   >,
 );
 

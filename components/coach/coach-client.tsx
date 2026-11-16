@@ -9,14 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { ZONAS } from "@/lib/validation/coach";
-import { borrarPlanIa, chatCoach, generarRutinas } from "@/app/(app)/coach/actions";
+import { AVISO } from "@/lib/styles";
+import { chatCoach } from "@/app/(app)/coach/actions";
+import { armarRutinas } from "@/app/(app)/coach/rutinas-actions";
+import { ZonasChips } from "@/components/forms/zonas-chips";
+import { Textarea } from "@/components/ui/textarea";
 
 type Msg = { role: "user" | "model"; text: string };
-type Busy = null | "chat" | "rutinas" | "ejercicios";
-
-const TEXTAREA =
-  "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
+type Busy = null | "chat" | "rutinas";
 
 export function CoachClient({
   resumen,
@@ -24,6 +24,9 @@ export function CoachClient({
   limite,
   tieneRutinas,
   rutinasDesactualizadas,
+  preferencias,
+  mes,
+  corre = true,
 }: {
   /** Resumen de la semana armado en el server sin IA (lib/stats-summary.ts resumenSemanal). */
   resumen: string[];
@@ -31,14 +34,21 @@ export function CoachClient({
   limite: number;
   tieneRutinas: boolean;
   rutinasDesactualizadas: boolean;
+  /** Equipo y zonas que contó en el registro o en el último pedido: precargan el formulario. */
+  preferencias: { equipo: string; zonas: string[] };
+  /** Objetivo músculo / bajar: en qué semana de su mes de rutinas está. */
+  mes?: { semana: number; terminado: boolean; diasRestantes: number } | null;
+  /** Entrena para una carrera o caminata: cambia los ejemplos del chat. */
+  corre?: boolean;
 }) {
   const router = useRouter();
   const [usados, setUsados] = useState(usosHoy);
   const [busy, setBusy] = useState<Busy>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
-  const [equipo, setEquipo] = useState("");
-  const [zonas, setZonas] = useState<string[]>([]);
+  const [equipo, setEquipo] = useState(preferencias.equipo);
+  const [zonas, setZonas] = useState<string[]>(preferencias.zonas);
+  const [pedido, setPedido] = useState("");
 
   const restantes = Math.max(0, limite - usados);
   const sinCuota = restantes === 0;
@@ -77,16 +87,14 @@ export function CoachClient({
   }
 
   async function handleRutinas() {
-    const result = await run("rutinas", () => generarRutinas({ equipo, zonas }));
+    const result = await run("rutinas", () => armarRutinas({ pedido, equipo, zonas }));
     if (!result) return;
-    toast.success("Rutinas listas. Las vas a ver en los días de gym del Calendario.");
-    router.refresh();
-  }
-
-  async function handleBorrar(tipo: "ejercicios") {
-    const result = await run(tipo, () => borrarPlanIa(tipo));
-    if (!result) return;
-    toast.success("Volviste al plan base.");
+    toast.success(
+      tieneRutinas
+        ? "Listo, cambiamos tus rutinas."
+        : "Rutinas listas. Las vas a ver en los días de gym del Calendario.",
+    );
+    setPedido("");
     router.refresh();
   }
 
@@ -95,8 +103,8 @@ export function CoachClient({
       <div>
         <h1 className="text-4xl font-bold sm:text-5xl">Coach</h1>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-muted-foreground">
-          Preguntale sobre tu plan, tus comidas o tus entrenamientos. Conoce tu perfil, tus eventos
-          y la fase en la que estás.
+          Preguntale sobre tu plan o tus entrenamientos. Conoce tu perfil, tu objetivo y la fase en
+          la que estás.
         </p>
         <p className="mt-1 text-sm font-medium tabular-nums" aria-live="polite">
           Te quedan {restantes}/{limite} consultas hoy.
@@ -121,8 +129,9 @@ export function CoachClient({
           <div className="grid max-h-[28rem] gap-3 overflow-y-auto" aria-live="polite">
             {messages.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Ej: &quot;¿Qué me toca esta semana y por qué?&quot;, &quot;Dormí mal, ¿hago igual la
-                tirada?&quot;, &quot;¿Qué como antes de la carrera?&quot;
+                {corre
+                  ? "Ej: “¿Qué me toca esta semana y por qué?”, “Dormí mal, ¿hago igual la salida larga?”, “¿Qué como antes de la carrera?”"
+                  : "Ej: “¿Qué me toca esta semana y por qué?”, “Dormí mal, ¿entreno igual?”, “¿Cuándo subo el peso en sentadilla?”"}
               </p>
             )}
             {messages.map((m, i) => (
@@ -169,54 +178,51 @@ export function CoachClient({
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Rutinas de gym con IA</CardTitle>
+            <CardTitle>Tus rutinas de gym</CardTitle>
             <CardDescription>
-              Arma tus rutinas de gym según tus eventos, tus metas, las zonas que quieras priorizar
-              y el equipo que tengas. El plan decide cuál toca cada día según tus días de
-              entrenamiento.
+              {tieneRutinas
+                ? "Las armó la IA con tu objetivo, tus metas, las zonas que priorizás y tu equipo. ¿Querés cambiar algo? Pedíselo (usa 1 consulta)."
+                : "Todavía no tenés rutinas armadas para vos: por ahora ves las rutinas base. Armalas con IA según tu objetivo, tus metas, tus zonas y tu equipo."}{" "}
+              El plan decide cuál toca cada día según tus días de entrenamiento.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
+            {mes && (
+              <p className="text-sm font-medium">
+                {mes.terminado
+                  ? "Terminaste tu mes: armá el próximo desde el Calendario."
+                  : `Semana ${mes.semana} de 4 de tu mes de rutinas. Al terminarlo elegís tu objetivo otra vez y armamos rutinas nuevas.`}
+              </p>
+            )}
             {rutinasDesactualizadas && (
-              <p className="text-sm text-amber-600 dark:text-amber-400">
+              <p className={AVISO}>
                 Tus eventos o tu perfil cambiaron desde que generaste estas rutinas. Conviene
                 rearmarlas.
               </p>
             )}
-            <fieldset className="grid gap-2">
-              <legend className="mb-1 text-sm font-medium">Zonas a priorizar</legend>
-              <div className="flex flex-wrap gap-2">
-                {ZONAS.map((z) => {
-                  const on = zonas.includes(z);
-                  return (
-                    <button
-                      key={z}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => setZonas(on ? zonas.filter((x) => x !== z) : [...zonas, z])}
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-sm capitalize transition-colors",
-                        on
-                          ? "border-primary bg-primary/15 font-semibold"
-                          : "border-border text-muted-foreground hover:bg-muted",
-                      )}
-                    >
-                      {z}
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
+            <ZonasChips valor={zonas} onChange={setZonas} legend="Zonas a priorizar" />
             <Label htmlFor="equipo">Equipo disponible (opcional)</Label>
-            <textarea
+            <Textarea
               id="equipo"
               rows={3}
               maxLength={500}
               value={equipo}
               onChange={(e) => setEquipo(e.target.value)}
               placeholder="Ej: máquinas de gym, mancuernas hasta 20 kg, sin barra olímpica"
-              className={TEXTAREA}
             />
+            {tieneRutinas && (
+              <>
+                <Label htmlFor="pedido-rutinas">¿Qué querés cambiar? (opcional)</Label>
+                <Textarea
+                  id="pedido-rutinas"
+                  rows={2}
+                  maxLength={1000}
+                  value={pedido}
+                  onChange={(e) => setPedido(e.target.value)}
+                  placeholder="Ej: más trabajo de glúteos, sacá la sentadilla que me molesta la rodilla"
+                />
+              </>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={handleRutinas}
@@ -226,19 +232,9 @@ export function CoachClient({
                 {busy === "rutinas"
                   ? "Armando…"
                   : tieneRutinas
-                    ? "Rearmar rutinas"
-                    : "Armar rutinas"}
+                    ? "Pedir cambio"
+                    : "Armar mis rutinas"}
               </Button>
-              {tieneRutinas && (
-                <Button
-                  variant="ghost"
-                  onClick={() => handleBorrar("ejercicios")}
-                  loading={busy === "ejercicios"}
-                  disabled={!!busy}
-                >
-                  Volver a las rutinas base
-                </Button>
-              )}
             </div>
           </CardContent>
         </Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Footprints, Medal, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,11 +43,14 @@ export function PerfilClient({
   email,
   perfil,
   events,
+  objetivo,
 }: {
   nombre: string;
   email: string;
   perfil: Perfil;
   events: UserEvent[];
+  /** Objetivo y zonas (user_metadata.preferencias). */
+  objetivo: ReactNode;
 }) {
   const [nombreDraft, setNombre] = useState(nombre);
   const [draft, setDraft] = useState(() => perfilADraft(perfil));
@@ -85,6 +88,8 @@ export function PerfilClient({
           calorías se recalculan solos.
         </p>
       </div>
+
+      {objetivo}
 
       <Card>
         <CardHeader>

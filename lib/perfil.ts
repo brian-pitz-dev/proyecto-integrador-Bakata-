@@ -77,9 +77,12 @@ export async function guardarPerfilYEventos(
   const { error: deleteError } = await supabase.from("evento").delete().eq("user_id", userId);
   if (deleteError) return falla("evento", deleteError, "No se pudieron guardar los eventos.");
 
-  const { error: eventosError } = await supabase
-    .from("evento")
-    .insert(eventos.map((e) => ({ user_id: userId, ...filaEvento(e) })));
+  // los eventos son opcionales (objetivo gym): sin eventos no hay nada que insertar
+  const { error: eventosError } = eventos.length
+    ? await supabase
+        .from("evento")
+        .insert(eventos.map((e) => ({ user_id: userId, ...filaEvento(e) })))
+    : { error: null };
   if (eventosError) return falla("evento", eventosError, "No se pudieron guardar los eventos.");
 
   const { error: metaError } = await supabase.auth.updateUser({

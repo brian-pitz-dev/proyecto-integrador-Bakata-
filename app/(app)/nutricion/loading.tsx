@@ -9,7 +9,7 @@ import {
 } from "@/components/skeletons/piezas";
 
 /**
- * Skeleton de Nutrición: misma estructura que la página real (comidas con IA, semanas, días,
+ * Skeleton de Nutrición: misma estructura que la página real (tu plan de comidas, semanas, días,
  * "Tu día" con los macros, comidas y reglas).
  */
 export default function Loading() {
@@ -17,7 +17,7 @@ export default function Loading() {
     <PaginaCargando label="Cargando nutrición" className="max-w-4xl gap-10">
       <EncabezadoCargando ancho="w-52" />
 
-      {/* Armá tus comidas con IA */}
+      {/* Tu plan de comidas */}
       <TarjetaCargando>
         <Bloque className="h-20 rounded-lg" />
         <div className="flex gap-2">

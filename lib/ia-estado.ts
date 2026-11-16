@@ -5,7 +5,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { toISO, todayNormalized } from "@/lib/date";
+import { usosVisiblesHoy } from "@/lib/preferencias";
 
 export async function getIaEstado(): Promise<{
   usosHoy: number;
@@ -13,8 +13,8 @@ export async function getIaEstado(): Promise<{
   isStale: (updatedAt?: string) => boolean;
 }> {
   const supabase = await createClient();
-  const [{ data: uso }, { data: perfil }, { data: ultimoEvento }] = await Promise.all([
-    supabase.from("uso_ia").select("usos").eq("fecha", toISO(todayNormalized())).maybeSingle(),
+  const [usosHoy, { data: perfil }, { data: ultimoEvento }] = await Promise.all([
+    usosVisiblesHoy(supabase),
     supabase.from("perfil").select("updated_at").maybeSingle(),
     supabase
       .from("evento")
@@ -32,7 +32,7 @@ export async function getIaEstado(): Promise<{
     .at(-1);
 
   return {
-    usosHoy: uso?.usos ?? 0,
+    usosHoy,
     isStale: (updatedAt) => !!updatedAt && !!lastChange && updatedAt < lastChange,
   };
 }

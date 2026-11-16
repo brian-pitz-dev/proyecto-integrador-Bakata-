@@ -6,9 +6,13 @@ import { LogoutButton } from "@/components/nav/logout-button";
 import { PerfilButton } from "@/components/nav/perfil-button";
 import { Tutorial } from "@/components/tutorial";
 import { getAuthedUser } from "@/lib/supabase/auth";
+import { leerEstadoPlanIa } from "@/lib/preferencias";
+import { PlanInicial } from "@/components/plan-inicial";
 
 export default async function AppLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const user = await getAuthedUser();
+  const estadoIa = user ? await leerEstadoPlanIa() : null;
+  const armandoPlan = !!estadoIa?.planPendiente;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -26,7 +30,10 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         </div>
         <div className="col-start-3 flex items-center justify-self-end gap-2">
           <PerfilButton />
-          <Tutorial abrirAlEntrar={!!user && !user.tutorialVisto} nombre={user?.nombre ?? null} />
+          <Tutorial
+            abrirAlEntrar={!!user && !user.tutorialVisto && !armandoPlan}
+            nombre={user?.nombre ?? null}
+          />
           <ThemeToggle />
           <LogoutButton />
         </div>
@@ -37,6 +44,10 @@ export default async function AppLayout({ children }: Readonly<{ children: React
       </main>
 
       <BottomTabs />
+
+      {armandoPlan && estadoIa && (
+        <PlanInicial equipo={estadoIa.preferencias.equipo} zonas={estadoIa.preferencias.zonas} />
+      )}
     </div>
   );
 }

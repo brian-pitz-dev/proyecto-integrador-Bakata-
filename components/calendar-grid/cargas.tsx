@@ -8,16 +8,27 @@ import { formatShort, fromISO, toISO, todayNormalized } from "@/lib/date";
 import { calcularProgresion, type Progresion } from "@/lib/progresion";
 import type { Carga } from "@/lib/validation/carga";
 import { cn } from "@/lib/utils";
+import type { NivelGym } from "@/lib/gym-exercises";
 
 interface CargasValue {
   cargas: Carga[];
+  /** Nivel de gym de la persona: ajusta las series de las rutinas base. */
+  nivelGym?: NivelGym;
   save: (ejercicio: string, fecha: string, kg: number | null) => Promise<boolean>;
 }
 
 const CargasContext = createContext<CargasValue | null>(null);
 
 /** Guarda en memoria las cargas del usuario y las actualiza al instante al anotar una nueva. */
-export function CargasProvider({ initial, children }: { initial: Carga[]; children: ReactNode }) {
+export function CargasProvider({
+  initial,
+  nivelGym,
+  children,
+}: {
+  initial: Carga[];
+  nivelGym?: NivelGym;
+  children: ReactNode;
+}) {
   const [cargas, setCargas] = useState(initial);
 
   async function save(ejercicio: string, fecha: string, kg: number | null) {
@@ -33,7 +44,13 @@ export function CargasProvider({ initial, children }: { initial: Carga[]; childr
     return true;
   }
 
-  return <CargasContext.Provider value={{ cargas, save }}>{children}</CargasContext.Provider>;
+  return (
+    <CargasContext.Provider value={{ cargas, save, nivelGym }}>{children}</CargasContext.Provider>
+  );
+}
+
+export function useNivelGym(): NivelGym | undefined {
+  return useContext(CargasContext)?.nivelGym;
 }
 
 interface EjercicioEnSesion {

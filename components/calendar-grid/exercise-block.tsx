@@ -1,7 +1,7 @@
-import { coreRoutines, getGymRoutine, type Routine } from "@/lib/gym-exercises";
+import { ajustarRutinaNivel, coreRoutines, getGymRoutine, type Routine } from "@/lib/gym-exercises";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb, VideoLink } from "@/components/calendar-grid/exercise-media";
-import { CargaInput, SetsLabel } from "@/components/calendar-grid/cargas";
+import { CargaInput, SetsLabel, useNivelGym } from "@/components/calendar-grid/cargas";
 
 export function ExerciseBlock({
   gymKey,
@@ -25,8 +25,10 @@ export function ExerciseBlock({
   /** Dentro de la tarjeta destacada de "Hoy" (lila en claro, violeta en oscuro). */
   inverse?: boolean;
 }) {
+  const nivelGym = useNivelGym();
+  // las rutinas de la IA ya vienen armadas para su nivel; las base se ajustan acá
   const routine = gymKey
-    ? (routines?.[gymKey] ?? getGymRoutine(gymKey, weekNum))
+    ? (routines?.[gymKey] ?? ajustarRutinaNivel(getGymRoutine(gymKey, weekNum), nivelGym))
     : coreKey
       ? coreRoutines[coreKey]
       : undefined;

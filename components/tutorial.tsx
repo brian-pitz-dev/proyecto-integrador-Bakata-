@@ -3,13 +3,13 @@
 import { useState } from "react";
 import {
   CalendarDays,
-  ChartColumn,
   CircleHelp,
   Flame,
   Rocket,
   Sparkles,
   UtensilsCrossed,
   type LucideIcon,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -48,12 +48,12 @@ function pasos(nombre: string | null): Paso[] {
       texto: [
         "Las comidas de lunes a viernes, rotando cada semana.",
         "Las porciones se ajustan a tu meta de calorías del día y te mostramos cuánta proteína suma cada comida.",
-        "Para que se ajusten, registrá tu peso.",
+        "Para que se ajusten, registrá tu peso una vez por semana: a la mañana, en ayunas.",
       ],
     },
     {
-      Icon: ChartColumn,
-      titulo: "Estadísticas",
+      Icon: TrendingUp,
+      titulo: "Progreso",
       texto: [
         "Tu progreso: peso contra tu objetivo, sueño, calorías, tiradas, caminatas, resultados de tus eventos y días entrenados por mes.",
         "Se completa sola a medida que registrás datos.",
@@ -72,7 +72,7 @@ function pasos(nombre: string | null): Paso[] {
       Icon: Rocket,
       titulo: "¡Listo para arrancar!",
       texto: [
-        "Primer paso: registrá tu peso de hoy desde el Calendario.",
+        "Primer paso: registrá tu peso desde el Calendario (una vez por semana, a la mañana en ayunas).",
         "Podés volver a ver esta guía cuando quieras con el botón ? de arriba.",
       ],
     },

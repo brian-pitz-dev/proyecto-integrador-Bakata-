@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { FECHA_E2E } from "./datos";
 
 test("cargar un peso y borrarlo", async ({ page }) => {
-  await page.goto("/estadisticas");
+  await page.goto("/progreso");
   // "Peso" también es el título del gráfico de Evolución: la de registros es la que tiene "+ Cargar"
   const tarjeta = page
     .locator('[data-slot="card"]')

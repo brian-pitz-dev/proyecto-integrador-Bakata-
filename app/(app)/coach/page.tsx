@@ -6,6 +6,8 @@ import { resumenSemanal } from "@/lib/stats-summary";
 import type { Registro } from "@/lib/types";
 import { AI_DAILY_LIMIT } from "@/lib/coach";
 import { CoachClient } from "@/components/coach/coach-client";
+import { leerEstadoPlanIa, usosVisiblesHoy } from "@/lib/preferencias";
+import { estadoMes, inicioDelMes } from "@/lib/plan-ia";
 
 export const metadata: Metadata = {
   title: "Coach · Bakata",
@@ -18,15 +20,16 @@ export default async function CoachPage() {
   if (!planContext) return null; // proxy.ts ya redirige a /onboarding antes de esto
 
   const supabase = await createClient();
+  const { preferencias } = await leerEstadoPlanIa(supabase);
   const hoy = todayNormalized();
   const [
-    { data: uso },
+    usosHoy,
     { data: perfil },
     { data: ultimoEvento },
     { data: registros },
     { data: ultimoPeso },
   ] = await Promise.all([
-    supabase.from("uso_ia").select("usos").eq("fecha", toISO(todayNormalized())).maybeSingle(),
+    usosVisiblesHoy(supabase),
     supabase.from("perfil").select("updated_at").maybeSingle(),
     supabase
       .from("evento")
@@ -60,6 +63,7 @@ export default async function CoachPage() {
   const isStale = (updatedAt?: string) => !!updatedAt && !!lastChange && updatedAt < lastChange;
   const { planIa, profile, events, weeks } = planContext;
   const regs = (registros as Registro[] | null) ?? [];
+  const corre = !preferencias.objetivo || preferencias.objetivo === "evento" || events.length > 0;
   const resumen = resumenSemanal({
     weeks,
     events,
@@ -69,15 +73,27 @@ export default async function CoachPage() {
     pesoActual: ultimoPeso ? Number(ultimoPeso.valor) : null,
     metaPesoKg: profile.metaPesoKg ?? null,
     hoy,
+    // sin carrera ni caminata (objetivo músculo / bajar), el resumen no reclama kilómetros
+    corre: corre,
   });
 
   return (
     <CoachClient
       resumen={resumen}
-      usosHoy={uso?.usos ?? 0}
+      usosHoy={usosHoy}
       limite={AI_DAILY_LIMIT}
       tieneRutinas={!!planIa.ejercicios}
       rutinasDesactualizadas={isStale(planIa.ejerciciosUpdatedAt)}
+      preferencias={{ equipo: preferencias.equipo, zonas: preferencias.zonas }}
+      corre={corre}
+      mes={
+        preferencias.objetivo === "musculo" || preferencias.objetivo === "bajar"
+          ? estadoMes(
+              inicioDelMes(preferencias.cicloInicio, planIa.ejerciciosUpdatedAt, profile.planStart),
+              toISO(hoy),
+            )
+          : null
+      }
     />
   );
 }

@@ -15,3 +15,7 @@ export const HIGHLIGHT =
 
 /** Bloque gris de carga (skeleton), con el tinte lila de la app. */
 export const SKELETON = "animate-pulse rounded-full bg-primary/10 dark:bg-white/10";
+
+/** Avisos suaves (plan desactualizado, nivel sin completar): violeta de la marca, no amarillo. */
+export const AVISO =
+  "rounded-xl bg-primary/10 px-3 py-2 text-sm text-primary ring-1 ring-primary/15 dark:bg-primary/15 dark:text-[#d6b8f2] dark:ring-white/10";

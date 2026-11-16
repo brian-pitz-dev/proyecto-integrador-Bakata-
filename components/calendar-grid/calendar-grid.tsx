@@ -2,136 +2,26 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
 import { toggleDayDone } from "@/app/registro/actions";
 import {
   getSessionsForDate,
   getCurrentWeekNum,
   type Week,
   type UserEvent,
-  type Session,
-  type SessionTag,
 } from "@/lib/training-plan";
 import { toISO, fromISO, addDays, todayNormalized, formatShort, WEEKDAY_LABELS } from "@/lib/date";
 import { cn } from "@/lib/utils";
-import { HIGHLIGHT, SURFACE } from "@/lib/styles";
+import { AVISO, HIGHLIGHT } from "@/lib/styles";
 import { WeekSelector } from "@/components/week-selector/week-selector";
-import { ExerciseBlock } from "@/components/calendar-grid/exercise-block";
 import { CargasProvider } from "@/components/calendar-grid/cargas";
+import { SemanaMovida } from "@/components/calendar-grid/semana-movida";
+import type { Movimiento } from "@/lib/mover";
 import type { Carga } from "@/lib/validation/carga";
-import type { Routine } from "@/lib/gym-exercises";
-import { LogDialog } from "@/components/log-form/registro-category-card";
-import { SleepForm } from "@/components/log-form/sleep-form";
-import { CalorieForm } from "@/components/log-form/calorie-form";
-import { NumericLogForm } from "@/components/log-form/numeric-log-form";
-
-// Franja de color por tipo de sesión: violeta = correr/cardio, azul = fuerza
-const HERO_BUTTON =
-  "rounded-full border-primary/25 bg-white px-3.5 text-primary hover:bg-primary/8 hover:text-primary dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:hover:text-white";
-
-const TAG_STRIPE: Record<SessionTag, string> = {
-  run: "border-run",
-  long: "border-run",
-  walk: "border-run",
-  event: "border-run",
-  luj: "border-run",
-  gym: "border-gym",
-  core: "border-gym",
-  rest: "border-border",
-};
-
-function SessionList({
-  sessions,
-  routines,
-  weekNum,
-  fecha,
-  inverse = false,
-}: {
-  sessions: Session[];
-  /** Día (ISO) de estas sesiones. */
-  fecha: string;
-  routines?: Record<string, Routine>;
-  /** Semana del plan, para la variante A/B/C de las rutinas compartidas. */
-  weekNum?: number;
-  /** Dentro de la tarjeta destacada de "Hoy" (lila en claro, violeta en oscuro). */
-  inverse?: boolean;
-}) {
-  return (
-    <div className="grid min-w-0 flex-1 gap-5">
-      {sessions.map((s, i) => (
-        <div
-          key={i}
-          className={cn(
-            "min-w-0 rounded-r-md border-l-[3px] pl-3",
-            inverse ? "border-primary/60 dark:border-white/60" : TAG_STRIPE[s.tag],
-          )}
-        >
-          <p
-            className={cn(
-              "font-semibold break-words",
-              inverse ? "text-foreground dark:text-white" : "text-foreground",
-            )}
-          >
-            {s.label}
-          </p>
-          {s.detail && (
-            <p
-              className={cn(
-                "text-sm break-words",
-                inverse ? "text-muted-foreground dark:text-white/75" : "text-muted-foreground",
-              )}
-            >
-              {s.detail}
-            </p>
-          )}
-          <ExerciseBlock
-            gymKey={s.gymKey}
-            coreKey={s.coreKey}
-            routines={routines}
-            maxEjercicios={s.maxEjercicios}
-            weekNum={weekNum}
-            fecha={fecha}
-            inverse={inverse}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DoneButton({
-  isDone,
-  disabled,
-  onClick,
-  inverse = false,
-}: {
-  isDone: boolean;
-  disabled: boolean;
-  onClick: () => void;
-  inverse?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      aria-label={isDone ? "Marcar como no completado" : "Marcar como completado"}
-      aria-pressed={isDone}
-      className={cn(
-        "flex size-10 shrink-0 items-center justify-center self-center rounded-full border-2 transition-colors disabled:opacity-40",
-        isDone
-          ? inverse
-            ? "border-primary bg-primary text-primary-foreground dark:border-white dark:bg-white dark:text-primary"
-            : "border-accent bg-accent text-accent-foreground"
-          : inverse
-            ? "border-primary/40 text-transparent hover:border-primary hover:text-primary/40 dark:border-white/50 dark:hover:border-white dark:hover:text-white/40"
-            : "border-border text-transparent hover:border-primary/60 hover:text-primary/40",
-      )}
-    >
-      <Check className="size-5" aria-hidden="true" />
-    </button>
-  );
-}
+import type { NivelGym, Routine } from "@/lib/gym-exercises";
+import { SessionList } from "@/components/calendar-grid/session-list";
+import { DoneButton } from "@/components/calendar-grid/done-button";
+import { DiaCard } from "@/components/calendar-grid/dia-card";
+import { RegistrosRapidos } from "@/components/calendar-grid/registros-rapidos";
 
 export function CalendarGrid({
   completedDates,
@@ -139,10 +29,19 @@ export function CalendarGrid({
   events,
   routines,
   cargas = [],
+  nivelGym,
+  movimientos = [],
+  finMes,
 }: {
   completedDates: string[];
   /** Pesos anotados por ejercicio (sobrecarga progresiva). */
   cargas?: Carga[];
+  /** Nivel de gym (preferencias): ajusta las series de las rutinas base. */
+  nivelGym?: NivelGym;
+  /** Días que movió la persona (ya aplicados en `weeks`): para ofrecer deshacerlos. */
+  movimientos?: Movimiento[];
+  /** Objetivo músculo / bajar: primer día después del mes de rutinas actual. */
+  finMes?: string;
   weeks: Week[];
   events: UserEvent[];
   /** Rutinas de gym generadas por IA (plan_ia); pisan a las compartidas por gymKey. */
@@ -150,8 +49,18 @@ export function CalendarGrid({
 }) {
   const todayNorm = todayNormalized();
   // el domingo ya interesa la semana que arranca
+  // Objetivo músculo / bajar: solo se muestran las semanas del mes de rutinas actual (y la de hoy);
+  // las siguientes todavía no existen: se arman al terminar el mes, con rutinas nuevas.
+  const todayISOInicial = toISO(todayNorm);
+  const semanasVisibles = finMes
+    ? weeks.filter((w) => w.start < finMes || w.start <= todayISOInicial)
+    : weeks;
+  const ultimaVisible = semanasVisibles.at(-1) ?? weeks[0];
   const [selectedWeek, setSelectedWeek] = useState(() =>
-    getCurrentWeekNum(weeks, todayNorm.getDay() === 0 ? addDays(todayNorm, 1) : todayNorm),
+    Math.min(
+      getCurrentWeekNum(weeks, todayNorm.getDay() === 0 ? addDays(todayNorm, 1) : todayNorm),
+      ultimaVisible.num,
+    ),
   );
   const [completed, setCompleted] = useState(new Set(completedDates));
   const [isPending, startTransition] = useTransition();
@@ -183,7 +92,7 @@ export function CalendarGrid({
   }
 
   return (
-    <CargasProvider initial={cargas}>
+    <CargasProvider initial={cargas} nivelGym={nivelGym}>
       <div className="mx-auto grid w-full max-w-4xl gap-14">
         <section
           className={cn(HIGHLIGHT, "relative grid gap-6 overflow-hidden rounded-[25px] p-6 sm:p-8")}
@@ -220,26 +129,15 @@ export function CalendarGrid({
             )}
           </div>
 
-          <div className="relative flex flex-wrap gap-2">
-            <LogDialog title="Sueño" buttonLabel="Sueño" triggerClassName={HERO_BUTTON}>
-              <SleepForm />
-            </LogDialog>
-            <LogDialog title="Calorías" buttonLabel="Calorías" triggerClassName={HERO_BUTTON}>
-              <CalorieForm />
-            </LogDialog>
-            <LogDialog title="Peso" buttonLabel="Peso" triggerClassName={HERO_BUTTON}>
-              <NumericLogForm
-                categoria="peso"
-                fieldLabel="Peso (kg)"
-                step="0.1"
-                successMessage="Peso guardado"
-              />
-            </LogDialog>
-          </div>
+          <RegistrosRapidos />
         </section>
 
         <section className="grid gap-7">
-          <WeekSelector weeks={weeks} selectedWeek={selectedWeek} onSelectWeek={setSelectedWeek} />
+          <WeekSelector
+            weeks={semanasVisibles}
+            selectedWeek={selectedWeek}
+            onSelectWeek={setSelectedWeek}
+          />
 
           <div>
             <h2 className="text-2xl font-semibold">{weekObj.phaseLabel}</h2>
@@ -249,70 +147,38 @@ export function CalendarGrid({
             </p>
           </div>
 
+          <SemanaMovida lunes={toISO(weekStart)} movimientos={movimientos} />
+
           <div className="grid gap-4">
             {days.map((date, i) => {
               const iso = toISO(date);
               const sessions = getSessionsForDate(weeks, events, date);
               const dayLabel = WEEKDAY_LABELS[i].slice(0, 3);
 
-              if (sessions.every((s) => s.tag === "rest")) {
-                return (
-                  <div
-                    key={iso}
-                    className="flex items-center gap-4 rounded-2xl border border-dashed border-border px-6 py-4 text-sm text-muted-foreground"
-                  >
-                    <span className="w-14 shrink-0 text-center tabular-nums">
-                      {dayLabel} {date.getDate()}
-                    </span>
-                    <span>{sessions[0].label}</span>
-                  </div>
-                );
-              }
-
-              const isDone = completed.has(iso);
               return (
-                <div
+                <DiaCard
                   key={iso}
-                  className={cn(
-                    SURFACE,
-                    "flex items-start gap-4 p-4 transition-colors sm:gap-5 sm:p-6",
-                    isDone ? "bg-accent/10 ring-accent/50" : "ring-foreground/5 dark:ring-white/10",
-                    iso === todayISO && !isDone && "ring-2 ring-primary",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "grid w-12 shrink-0 place-items-center rounded-2xl py-2 text-center",
-                      iso === todayISO ? "bg-primary text-primary-foreground" : "bg-muted",
-                    )}
-                  >
-                    <p
-                      className={cn(
-                        "text-xs",
-                        iso === todayISO ? "text-primary-foreground/80" : "text-muted-foreground",
-                      )}
-                    >
-                      {dayLabel}
-                    </p>
-                    <p className="font-heading text-2xl leading-tight font-semibold tabular-nums">
-                      {date.getDate()}
-                    </p>
-                  </div>
-                  <SessionList
-                    sessions={sessions}
-                    fecha={iso}
-                    routines={routines}
-                    weekNum={weekObj.num}
-                  />
-                  <DoneButton
-                    isDone={isDone}
-                    disabled={date > todayNorm || isPending}
-                    onClick={() => handleToggle(date)}
-                  />
-                </div>
+                  fecha={iso}
+                  dayLabel={dayLabel}
+                  sessions={sessions}
+                  routines={routines}
+                  weekNum={weekObj.num}
+                  isDone={completed.has(iso)}
+                  hoy={todayISO}
+                  disabled={date > todayNorm || isPending}
+                  onToggle={() => handleToggle(date)}
+                  mover={{ lunes: toISO(weekStart), weeks, events }}
+                />
               );
             })}
           </div>
+
+          {finMes && weekObj.num === ultimaVisible.num && (
+            <p className={AVISO}>
+              Esta es la última semana de tu mes de rutinas. Cuando la termines, elegís tu objetivo
+              otra vez y armamos el mes que viene con rutinas nuevas, distintas a estas.
+            </p>
+          )}
         </section>
       </div>
     </CargasProvider>

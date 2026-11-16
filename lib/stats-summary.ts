@@ -171,6 +171,7 @@ export function resumenSemanal({
   pesoActual,
   metaPesoKg,
   hoy,
+  corre = true,
 }: {
   weeks: Week[];
   events: UserEvent[];
@@ -180,6 +181,11 @@ export function resumenSemanal({
   pesoActual: number | null;
   metaPesoKg: number | null;
   hoy: Date;
+  /**
+   * Entrena para una carrera o caminata. Si no (objetivo músculo / bajar), los km solo se
+   * mencionan si registró alguno, y se cuenta el peso anotado en el gym.
+   */
+  corre?: boolean;
 }): string[] {
   const lunes = toISO(getMonday(hoy));
   const hoyISO = toISO(hoy);
@@ -210,11 +216,22 @@ export function resumenSemanal({
         r.fecha <= hoyISO,
     )
     .reduce((a, r) => a + Number(r.valor), 0);
-  lineas.push(
-    km > 0
-      ? `Sumaste ${kg(km)} km corriendo y caminando.`
-      : "Todavía no registraste kilómetros esta semana.",
-  );
+  if (km > 0) lineas.push(`Sumaste ${kg(km)} km corriendo y caminando.`);
+  else if (corre) lineas.push("Todavía no registraste kilómetros esta semana.");
+
+  if (!corre) {
+    const ejercicios = new Set(
+      registros
+        // "carga" no está en Categoria (lib/types.ts): es la categoría del peso por ejercicio
+        .filter((r) => (r.categoria as string) === "carga" && r.fecha >= lunes && r.fecha <= hoyISO)
+        .map((r) => r.nota ?? r.fecha),
+    ).size;
+    lineas.push(
+      ejercicios > 0
+        ? `Anotaste el peso de ${ejercicios} ejercicio${ejercicios === 1 ? "" : "s"} esta semana.`
+        : "Todavía no anotaste el peso de tus ejercicios esta semana: es lo que te deja ver si progresás.",
+    );
+  }
 
   const sueno = [...porDia("sueno")].filter(([f]) => f >= haceUnaSemana && f < hoyISO);
   if (sueno.length) {

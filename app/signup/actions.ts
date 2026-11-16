@@ -11,12 +11,17 @@ import { guardarPerfilYEventos } from "@/lib/perfil";
 import type { ActionResult } from "@/lib/types";
 
 /**
- * `paso`: a qué paso del registro volver para corregir (0 cuenta, 1 perfil, 2 eventos).
+ * `paso`: a qué paso del registro volver para corregir (0 cuenta, 1 perfil, 2 eventos, 3 tu plan).
  * `confirmar`: el email al que se mandó el link de confirmación (la cuenta todavía no tiene sesión).
  */
 export type RegistroResult = ActionResult & { paso?: number; confirmar?: string };
 
-const PASO_POR_CAMPO: Record<string, number> = { cuenta: 0, perfil: 1, eventos: 2 };
+const PASO_POR_CAMPO: Record<string, number> = {
+  cuenta: 0,
+  perfil: 1,
+  eventos: 2,
+  preferencias: 3,
+};
 
 /** Registro en pasos: crea la cuenta, guarda perfil + eventos y entra a la app, en un solo envío. */
 // input: unknown — viene del navegador; zod valida todo (los pasos ya se validaron en el cliente).
@@ -27,7 +32,8 @@ export async function registrar(input: unknown): Promise<RegistroResult> {
     return {
       ok: false,
       message: issue?.message ?? "Datos inválidos.",
-      paso: PASO_POR_CAMPO[String(issue?.path[0])],
+      // la meta de peso se pide en el paso del objetivo
+      paso: issue?.path[1] === "metaPesoKg" ? 2 : PASO_POR_CAMPO[String(issue?.path[0])],
     };
   }
 
@@ -42,7 +48,7 @@ export async function registrar(input: unknown): Promise<RegistroResult> {
     return { ok: false, message: "Verificación anti-bot fallida. Probá de nuevo." };
   }
 
-  const { cuenta, perfil, eventos } = parsed.data;
+  const { cuenta, perfil, eventos, preferencias } = parsed.data;
   const h = await headers();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -58,6 +64,9 @@ export async function registrar(input: unknown): Promise<RegistroResult> {
         // Sin sesión hasta confirmar el email no se puede guardar el perfil (RLS): viaja acá y
         // lo crea completarRegistroPendiente (lib/perfil.ts) al confirmar o al iniciar sesión.
         registro_pendiente: { perfil, eventos },
+        // La IA arma su plan al entrar por primera vez a la app (components/plan-inicial.tsx).
+        preferencias,
+        plan_pendiente: true,
       },
     },
   });

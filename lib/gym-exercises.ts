@@ -495,3 +495,47 @@ export const coreRoutines: Record<string, Routine> = {
     ],
   },
 };
+
+/**
+ * Todos los ejercicios de las rutinas base (variantes A/B/C), sin repetir: el catálogo del que
+ * elige la IA. Cada uno tiene foto y video (lib/exercise-media.ts) y sus músculos.
+ */
+export function catalogoEjercicios(): Exercise[] {
+  const vistos = new Map<string, Exercise>();
+  for (const variante of [gymRoutines, gymRoutinesB, gymRoutinesC])
+    for (const routine of Object.values(variante))
+      for (const ex of routine.exercises)
+        if (!vistos.has(ex.name))
+          vistos.set(ex.name, { name: ex.name, sets: ex.sets, muscles: ex.muscles });
+  return [...vistos.values()];
+}
+
+export type NivelGym = "principiante" | "intermedio" | "avanzado";
+
+/**
+ * Series según el nivel (las rutinas base están pensadas para intermedio): principiante, una
+ * serie menos (mínimo 2) y más lejos del fallo (RIR 3); avanzado, una serie más (máximo 5) y un
+ * RIR menos (mínimo 1). Las repeticiones no cambian: la progresión de cargas sigue igual.
+ */
+export function ajustarSeriesNivel(sets: string, nivel?: NivelGym): string {
+  if (!nivel || nivel === "intermedio") return sets;
+  return sets
+    .replace(/^(\d+)×/, (_, n: string) =>
+      nivel === "principiante"
+        ? `${Math.max(2, Number(n) - 1)}×`
+        : `${Math.min(5, Number(n) + 1)}×`,
+    )
+    .replace(/RIR (\d+)/, (_, r: string) =>
+      nivel === "principiante"
+        ? `RIR ${Math.max(3, Number(r))}`
+        : `RIR ${Math.max(1, Number(r) - 1)}`,
+    );
+}
+
+export function ajustarRutinaNivel<R extends Routine | undefined>(routine: R, nivel?: NivelGym): R {
+  if (!routine || !nivel || nivel === "intermedio") return routine;
+  return {
+    ...routine,
+    exercises: routine.exercises.map((e) => ({ ...e, sets: ajustarSeriesNivel(e.sets, nivel) })),
+  } as R;
+}

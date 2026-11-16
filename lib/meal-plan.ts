@@ -529,6 +529,8 @@ interface IngredienteNutri {
   fuenteProteina?: boolean;
   /** Verdura de acompañamiento: al ajustar a la persona queda en su porción base. */
   verdura?: boolean;
+  /** Porción máxima razonable en una comida (g): al agrandar porciones no se pasa de esto. */
+  maxG?: number;
   /** Acompañamiento en poca cantidad (queso untable, mermelada): queda en su porción base. */
   acompana?: boolean;
   /** Fuente principal de grasa (frutos secos, pasta de maní): se escala aparte de los hidratos. */
@@ -540,6 +542,7 @@ interface IngredienteNutri {
 const ingredienteNutri: Record<string, IngredienteNutri> = {
   pollo: {
     nombre: "pollo",
+    maxG: 300,
     fuenteProteina: true,
     prote100: 31,
     kcal100: 165,
@@ -548,6 +551,7 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
   },
   carneVaca: {
     nombre: "carne",
+    maxG: 250,
     fuenteProteina: true,
     prote100: 27,
     kcal100: 250,
@@ -556,6 +560,7 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
   },
   carnePicada: {
     nombre: "carne picada",
+    maxG: 250,
     fuenteProteina: true,
     prote100: 28,
     kcal100: 250,
@@ -564,6 +569,7 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
   },
   milanesa: {
     nombre: "milanesa",
+    maxG: 250,
     fuenteProteina: true,
     prote100: 21,
     kcal100: 230,
@@ -580,15 +586,16 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
     grasa100: 15,
     unidadG: 50,
   },
-  arroz: { nombre: "arroz", prote100: 7, kcal100: 360, hc100: 79, grasa100: 0.6 },
+  arroz: { maxG: 120, nombre: "arroz", prote100: 7, kcal100: 360, hc100: 79, grasa100: 0.6 },
   fideosInteg: {
     nombre: "fideos integrales",
+    maxG: 120,
     prote100: 11.25,
     kcal100: 350,
     hc100: 70,
     grasa100: 2.5,
   },
-  papa: { nombre: "papa", prote100: 2, kcal100: 77, hc100: 17, grasa100: 0.1 },
+  papa: { maxG: 400, nombre: "papa", prote100: 2, kcal100: 77, hc100: 17, grasa100: 0.1 },
   espinaca: {
     nombre: "espinaca",
     verdura: true,
@@ -597,9 +604,10 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
     hc100: 1.5,
     grasa100: 0.4,
   },
-  avena: { nombre: "avena", prote100: 3.3, kcal100: 70, hc100: 12, grasa100: 1.4 },
+  avena: { maxG: 200, nombre: "avena", prote100: 3.3, kcal100: 70, hc100: 12, grasa100: 1.4 },
   almendras: {
     nombre: "almendras",
+    maxG: 40,
     fuenteGrasa: true,
     prote100: 20,
     kcal100: 580,
@@ -608,16 +616,25 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
   },
   pastaMani: {
     nombre: "pasta de maní",
+    maxG: 40,
     fuenteProteina: true,
     prote100: 37,
     kcal100: 560,
     hc100: 12,
     grasa100: 42,
   },
-  rapiditas: { nombre: "rapiditas", prote100: 9.1, kcal100: 300, hc100: 50, grasa100: 7 },
-  polenta: { nombre: "polenta", prote100: 7.2, kcal100: 360, hc100: 78, grasa100: 1.5 },
+  rapiditas: {
+    maxG: 110,
+    nombre: "rapiditas",
+    prote100: 9.1,
+    kcal100: 300,
+    hc100: 50,
+    grasa100: 7,
+  },
+  polenta: { maxG: 120, nombre: "polenta", prote100: 7.2, kcal100: 360, hc100: 78, grasa100: 1.5 },
   chorizo: {
     nombre: "chorizo",
+    maxG: 150,
     fuenteProteina: true,
     prote100: 17.5,
     kcal100: 330,
@@ -668,9 +685,23 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
     hc100: 4,
     grasa100: 6,
   },
-  lentejas: { nombre: "lentejas cocidas", prote100: 9, kcal100: 116, hc100: 17, grasa100: 0.4 },
-  legumbres: { nombre: "garbanzos cocidos", prote100: 8.9, kcal100: 164, hc100: 20, grasa100: 2.6 },
-  calabaza: { nombre: "calabaza", prote100: 1, kcal100: 26, hc100: 6, grasa100: 0.1 },
+  lentejas: {
+    maxG: 250,
+    nombre: "lentejas cocidas",
+    prote100: 9,
+    kcal100: 116,
+    hc100: 17,
+    grasa100: 0.4,
+  },
+  legumbres: {
+    maxG: 250,
+    nombre: "garbanzos cocidos",
+    prote100: 8.9,
+    kcal100: 164,
+    hc100: 20,
+    grasa100: 2.6,
+  },
+  calabaza: { maxG: 300, nombre: "calabaza", prote100: 1, kcal100: 26, hc100: 6, grasa100: 0.1 },
   vegetales: {
     nombre: "vegetales",
     verdura: true,
@@ -679,9 +710,10 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
     hc100: 4.5,
     grasa100: 0.3,
   },
-  avenaCruda: { nombre: "avena", prote100: 13, kcal100: 380, hc100: 58, grasa100: 7 },
+  avenaCruda: { maxG: 80, nombre: "avena", prote100: 13, kcal100: 380, hc100: 58, grasa100: 7 },
   panIntegral: {
     nombre: "pan integral",
+    maxG: 90,
     unidadG: 30,
     unidadNombre: ["tostada integral", "tostadas integrales"],
     prote100: 9,
@@ -691,6 +723,7 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
   },
   galletasArroz: {
     nombre: "galletas de arroz",
+    maxG: 40,
     unidadG: 10,
     unidadNombre: ["galleta de arroz", "galletas de arroz"],
     prote100: 8,
@@ -698,10 +731,19 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
     hc100: 80,
     grasa100: 3,
   },
-  granola: { nombre: "granola", prote100: 10, kcal100: 450, hc100: 60, grasa100: 18 },
-  yogur: { nombre: "yogur descremado", prote100: 4.5, kcal100: 45, hc100: 6, grasa100: 0.1 },
+  granola: { maxG: 60, nombre: "granola", prote100: 10, kcal100: 450, hc100: 60, grasa100: 18 },
+  yogur: {
+    maxG: 300,
+    nombre: "yogur descremado",
+    fuenteProteina: true,
+    prote100: 4.5,
+    kcal100: 45,
+    hc100: 6,
+    grasa100: 0.1,
+  },
   fruta: {
     nombre: "fruta",
+    maxG: 300,
     unidadG: 150,
     unidadNombre: ["fruta", "frutas"],
     prote100: 0.4,
@@ -741,9 +783,18 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
     hc100: 3,
     grasa100: 16,
   },
-  palta: { nombre: "palta", fuenteGrasa: true, prote100: 2, kcal100: 160, hc100: 2, grasa100: 15 },
+  palta: {
+    maxG: 100,
+    nombre: "palta",
+    fuenteGrasa: true,
+    prote100: 2,
+    kcal100: 160,
+    hc100: 2,
+    grasa100: 15,
+  },
   cocoRallado: {
     nombre: "coco rallado",
+    maxG: 30,
     fuenteGrasa: true,
     prote100: 7,
     kcal100: 660,
@@ -752,6 +803,7 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
   },
   aceiteOliva: {
     nombre: "aceite de oliva",
+    maxG: 15,
     fuenteGrasa: true,
     prote100: 0,
     kcal100: 900,
@@ -760,6 +812,7 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
   },
   banana: {
     nombre: "banana",
+    maxG: 240,
     unidadG: 120,
     unidadNombre: ["banana", "bananas"],
     prote100: 1.1,
@@ -790,6 +843,14 @@ const ingredienteNutri: Record<string, IngredienteNutri> = {
     fixedKcal: 120,
     fixedHc: 12,
     fixedGrasa: 3,
+  },
+  lecheDescremada: {
+    nombre: "leche descremada",
+    porcionFija: "250 ml de leche descremada",
+    fixed: 8.5,
+    fixedKcal: 88,
+    fixedHc: 12,
+    fixedGrasa: 0.5,
   },
 };
 
@@ -1161,7 +1222,7 @@ export function getMealsForDay(
   };
 
   const types = Object.keys(MEAL_LABELS) as MealType[];
-  if (bank === mealBank && opts.pesoKg && opts.pesoKg > 0)
+  if (opts.pesoKg && opts.pesoKg > 0 && types.every((t) => platoCalculable(picked[t])))
     return {
       ...diaPersonalizado(picked, opts.pesoKg, opts.metaKcal ?? null, opts.tipoDia ?? null),
       isWeekday: !finde,
@@ -1209,14 +1270,28 @@ export function getMealsForDay(
   };
 }
 
-/** Reglas fijas del plan de comidas, tal como en plan_vida_2026.html. */
-export const FIXED_RULES = [
-  "Plato chico para desayuno/merienda (1 opción de cada grupo).",
-  "Plato playo de 28cm para almuerzo/cena, medio plato de vegetales siempre.",
-  "Vaso de agua antes de cada comida.",
-  "Creatina diaria, aparte del cálculo de proteína.",
-  "Sábado y domingo sin estructura fija (excepto en días de evento).",
-] as const;
+/** Reglas de alimentación según la persona y el día (objetivo, tipo de día). */
+export function reglasNutricion(c: {
+  objetivo?: "musculo" | "bajar" | "evento";
+  tipoDia?: TipoDia | null;
+}): string[] {
+  const reglas: (string | false)[] = [
+    "Medio plato de vegetales en el almuerzo y la cena.",
+    "Repartí la proteína entre las comidas en vez de concentrarla en una.",
+    "Un vaso de agua antes de cada comida.",
+    c.objetivo === "bajar" &&
+      "Empezá por las verduras y la proteína: llenan más con menos calorías.",
+    c.objetivo === "musculo" && "Comé algo con proteína e hidratos en las 2 horas después del gym.",
+    (c.tipoDia === "fondo" || c.tipoDia === "running") &&
+      "Hoy entrenás cardio: sumá hidratos antes y después de la sesión.",
+    c.tipoDia === "carga" &&
+      "Carga de hidratos: más pasta, arroz o papa y menos fibra y grasa, para llegar con energía.",
+    c.tipoDia === "descanso" &&
+      "Día de descanso: la proteína sigue igual, los hidratos pueden bajar.",
+    "El fin de semana es más flexible: tratá de llegar a la proteína del día.",
+  ];
+  return reglas.filter((r): r is string => !!r);
+}
 
 // ---------------------------------------------------------------------------
 // Banco base ajustado a cada persona
@@ -1268,7 +1343,7 @@ const GRASA_MIN_G_POR_KG = 0.8;
 const HC_MIN_G_POR_KG = 2;
 
 const FACTOR_MIN_PERSONAL = 0.5;
-const FACTOR_MAX_PERSONAL = 1.8;
+const FACTOR_MAX_PERSONAL = 2;
 /** Margen aceptado alrededor del objetivo de proteína antes de agregar o sacar batidos/huevos. */
 const PROTEINA_MARGEN_BAJO = 0.9;
 const PROTEINA_MARGEN_ALTO = 1.15;
@@ -1299,10 +1374,8 @@ function escalarPorClase(meal: Meal, f: Factores): Meal {
       const clase = claseDe(ing);
       if (clase === "fijo") return { ...i };
       const unidad = ing.unidadG ?? 5;
-      return {
-        ...i,
-        cantidad: Math.max(unidad, Math.round((i.cantidad * f[clase]) / unidad) * unidad),
-      };
+      const cantidad = Math.max(unidad, Math.round((i.cantidad * f[clase]) / unidad) * unidad);
+      return { ...i, cantidad: ing.maxG ? Math.min(ing.maxG, cantidad) : cantidad };
     }),
   };
 }
@@ -1310,16 +1383,17 @@ function escalarPorClase(meal: Meal, f: Factores): Meal {
 interface Macros {
   p: number;
   h: number;
+  g: number;
   k: number;
 }
 
 /** Proteína, hidratos y kcal del día a porción base, separados por clase de ingrediente. */
 function partesDelDia(meals: Meal[]): Record<Clase, Macros> {
   const r: Record<Clase, Macros> = {
-    prote: { p: 0, h: 0, k: 0 },
-    hc: { p: 0, h: 0, k: 0 },
-    grasa: { p: 0, h: 0, k: 0 },
-    fijo: { p: 0, h: 0, k: 0 },
+    prote: { p: 0, h: 0, g: 0, k: 0 },
+    hc: { p: 0, h: 0, g: 0, k: 0 },
+    grasa: { p: 0, h: 0, g: 0, k: 0 },
+    fijo: { p: 0, h: 0, g: 0, k: 0 },
   };
   for (const meal of meals)
     for (const item of meal.ingredientes) {
@@ -1329,66 +1403,47 @@ function partesDelDia(meals: Meal[]): Record<Clase, Macros> {
       if (ing.fixed !== undefined) {
         c.p += ing.fixed;
         c.h += ing.fixedHc ?? 0;
+        c.g += ing.fixedGrasa ?? 0;
         c.k += ing.fixedKcal ?? 0;
         continue;
       }
       const g = (item.cantidad ?? 0) / 100;
       c.p += (ing.prote100 ?? 0) * g;
       c.h += (ing.hc100 ?? 0) * g;
+      c.g += (ing.grasa100 ?? 0) * g;
       c.k += (ing.kcal100 ?? 0) * g;
     }
   return r;
 }
 
+/** Objetivos del día en gramos: proteína, hidratos y grasas (las calorías salen de los tres). */
+interface MetasDia {
+  p: number;
+  h: number;
+  g: number;
+}
+
 /**
- * Factores por clase para que el día llegue a la proteína, los hidratos y las calorías de la persona:
- * la proteína la ajusta la fuente de proteína, los hidratos el arroz/papa/avena…, y las grasas
- * (frutos secos) completan las calorías. Se resuelve por pasadas sucesivas, acotando cada factor.
+ * Factores por clase para que el día llegue a la proteína, los hidratos y las grasas de la persona:
+ * la fuente de proteína (carne, huevo…) ajusta la proteína, la de hidratos (arroz, papa, avena…)
+ * los hidratos y la de grasas (frutos secos, palta, aceite) las grasas. Como cada alimento aporta
+ * un poco de todo, se resuelve por pasadas sucesivas, acotando cada factor.
  */
-function factoresPara(
-  meals: Meal[],
-  proteinaG: number,
-  hcG: number | null,
-  metaKcal: number | null,
-): Factores {
+function factoresPara(meals: Meal[], metas: MetasDia): Factores {
   const d = partesDelDia(meals);
   const total = (f: Factores, key: keyof Macros) =>
     d.fijo[key] + f.prote * d.prote[key] + f.hc * d.hc[key] + f.grasa * d.grasa[key];
   const f: Factores = { prote: 1, hc: 1, grasa: 1 };
-  const meta = metaKcal && metaKcal > 0 ? metaKcal : total(f, "k");
-
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 40; i++) {
     if (d.prote.p > 0)
       f.prote = acotar(
-        (proteinaG - (total(f, "p") - f.prote * d.prote.p)) / d.prote.p,
+        (metas.p - (total(f, "p") - f.prote * d.prote.p)) / d.prote.p,
         FACTOR_MIN_PROTE,
       );
-    if (hcG !== null && d.hc.h > 0) f.hc = acotar((hcG - (total(f, "h") - f.hc * d.hc.h)) / d.hc.h);
-    if (d.grasa.k > 0) f.grasa = acotar((meta - (total(f, "k") - f.grasa * d.grasa.k)) / d.grasa.k);
-    else if (hcG === null && d.hc.k > 0)
-      f.hc = acotar((meta - (total(f, "k") - f.hc * d.hc.k)) / d.hc.k);
+    if (d.hc.h > 0) f.hc = acotar((metas.h - (total(f, "h") - f.hc * d.hc.h)) / d.hc.h);
+    if (d.grasa.g > 0)
+      f.grasa = acotar((metas.g - (total(f, "g") - f.grasa * d.grasa.g)) / d.grasa.g);
   }
-
-  // Si las grasas toparon y las calorías no cierran: los hidratos y después la proteína compensan,
-  // sin pasarse de su margen.
-  const ajustar = (clase: "hc" | "prote", tope: number | null) => {
-    const k = total(f, "k");
-    if (Math.abs(k - meta) <= meta * 0.05 || d[clase].k <= 0) return;
-    let nuevo = (meta - (k - f[clase] * d[clase].k)) / d[clase].k;
-    const key = clase === "hc" ? "h" : "p";
-    if (tope !== null && d[clase][key] > 0) {
-      const resto = total(f, key) - f[clase] * d[clase][key];
-      const limite =
-        k < meta ? (tope * 1.2 - resto) / d[clase][key] : (tope * 0.9 - resto) / d[clase][key];
-      nuevo = k < meta ? Math.min(nuevo, limite) : Math.max(nuevo, limite);
-    }
-    f[clase] = acotar(
-      k < meta ? Math.max(f[clase], nuevo) : Math.min(f[clase], nuevo),
-      clase === "prote" ? FACTOR_MIN_PROTE : FACTOR_MIN_PERSONAL,
-    );
-  };
-  ajustar("hc", hcG);
-  ajustar("prote", proteinaG);
   return f;
 }
 
@@ -1406,24 +1461,41 @@ function sinBatido(meal: Meal): Meal {
   };
 }
 
-/** Hidratos del día para la persona: g/kg según el tipo de día, sin comerse las grasas mínimas. */
-export function hcObjetivo(pesoKg: number, tipoDia: TipoDia, metaKcal: number | null): number {
-  const ideal = pesoKg * HC_G_POR_KG[tipoDia];
-  if (!metaKcal) return Math.round(ideal);
-  const disponible =
-    (metaKcal - 4 * pesoKg * PROTEINA_G_POR_KG - 9 * pesoKg * GRASA_MIN_G_POR_KG) / 4;
-  return Math.round(Math.max(pesoKg * HC_MIN_G_POR_KG, Math.min(ideal, disponible)));
-}
+/** Grasas: piso saludable y techo razonable (g/kg); entre los dos completan las calorías. */
+const GRASA_MAX_G_POR_KG = 1.2;
 
 /**
- * Grasas del día: las calorías que quedan después de la proteína y los hidratos (9 kcal/g), con
- * piso en GRASA_MIN_G_POR_KG. Sin meta calórica, 1 g/kg.
+ * Proteína, hidratos y grasas del día para la persona, que sumen su meta de calorías:
+ * proteína 1,8 g/kg; grasas, lo que deja la meta después de la proteína y los hidratos del tipo de
+ * día, acotadas entre 0,8 y 1,2 g/kg; los hidratos completan el resto (así, con superávit sobran
+ * hidratos y con déficit se recortan, nunca debajo de 2 g/kg). Sin meta: hidratos del tipo de día
+ * y grasas 1 g/kg.
  */
-export function grasaObjetivo(pesoKg: number, hcG: number | null, metaKcal: number | null): number {
-  const minimo = pesoKg * GRASA_MIN_G_POR_KG;
-  if (!metaKcal || hcG === null) return Math.round(Math.max(minimo, pesoKg));
-  const resto = (metaKcal - 4 * pesoKg * PROTEINA_G_POR_KG - 4 * hcG) / 9;
-  return Math.round(Math.max(minimo, resto));
+export function metasMacros(
+  pesoKg: number,
+  tipoDia: TipoDia,
+  metaKcal: number | null,
+): { p: number; h: number; g: number } {
+  const p = pesoKg * PROTEINA_G_POR_KG;
+  const hBase = pesoKg * HC_G_POR_KG[tipoDia];
+  if (!metaKcal) return { p, h: hBase, g: pesoKg };
+  const libre = metaKcal - 4 * p;
+  const g = Math.min(
+    pesoKg * GRASA_MAX_G_POR_KG,
+    Math.max(pesoKg * GRASA_MIN_G_POR_KG, (libre - 4 * hBase) / 9),
+  );
+  const h = Math.max(pesoKg * HC_MIN_G_POR_KG, (libre - 9 * g) / 4);
+  return { p, h, g };
+}
+
+/** Hidratos del día para la persona (ver metasMacros). */
+export function hcObjetivo(pesoKg: number, tipoDia: TipoDia, metaKcal: number | null): number {
+  return Math.round(metasMacros(pesoKg, tipoDia, metaKcal).h);
+}
+
+/** Grasas del día para la persona (ver metasMacros). */
+export function grasaObjetivo(pesoKg: number, tipoDia: TipoDia, metaKcal: number | null): number {
+  return Math.round(metasMacros(pesoKg, tipoDia, metaKcal).g);
 }
 
 function diaPersonalizado(
@@ -1434,15 +1506,15 @@ function diaPersonalizado(
 ): DayPlan {
   const types = Object.keys(MEAL_LABELS) as MealType[];
   const objetivo = pesoKg * PROTEINA_G_POR_KG;
-  const hcMeta = tipoDia ? hcObjetivo(pesoKg, tipoDia, metaKcal) : null;
+  // sin tipo de día se apunta a un día de gym
+  const metas: MetasDia = metasMacros(pesoKg, tipoDia ?? "gym", metaKcal);
+  const hcMeta = tipoDia ? Math.round(metas.h) : null;
   let base: Record<MealType, Meal> = { ...picked };
 
   function armar(b: Record<MealType, Meal>) {
     const f = factoresPara(
       types.map((t) => b[t]),
-      objetivo,
-      hcMeta,
-      metaKcal,
+      metas,
     );
     const meals: DayMeal[] = types.map((type) => {
       const meal = escalarPorClase(b[type], f);
@@ -1453,6 +1525,7 @@ function diaPersonalizado(
   }
 
   let dia = armar(base);
+  const kcalDe = (d: typeof dia) => d.meals.reduce((t, m) => t + calcMealKcal(m.meal), 0);
 
   // Falta proteína aun con la fuente al máximo: refuerzos, de a uno (mismo orden que el plan original).
   const refuerzos: ((b: Record<MealType, Meal>) => Record<MealType, Meal> | null)[] = [
@@ -1480,32 +1553,39 @@ function diaPersonalizado(
     dia = armar(base);
   }
 
-  // Faltan hidratos aun con las porciones al máximo (días con pocos hidratos en el menú): se suma
-  // fruta, de a una comida.
-  if (hcMeta !== null)
-    for (const type of ["desayuno", "merienda", "media"] as const) {
-      const hc = dia.meals.reduce((t, m) => t + (m.hcG ?? 0), 0);
-      const kcal = dia.meals.reduce((t, m) => t + calcMealKcal(m.meal), 0);
-      if (hc >= hcMeta * 0.85 || (metaKcal && kcal >= metaKcal * 1.08)) break;
-      const meal = cloneMeal(base[type]);
-      meal.ingredientes.push({ id: "banana", cantidad: 120 });
-      meal.name = `${meal.name} + banana`;
-      base = { ...base, [type]: meal };
-      dia = armar(base);
-    }
-
-  // Faltan grasas (días con platos muy magros): una cdita de oliva en almuerzo y cena, o almendras
-  // a media mañana, mientras no se pase de la meta calórica.
-  const grasaMeta = grasaObjetivo(pesoKg, hcMeta, metaKcal);
-  const agregados: [MealType, string, number, string][] = [
-    ["almuerzo", "aceiteOliva", 5, "oliva"],
-    ["cena", "aceiteOliva", 5, "oliva"],
-    ["media", "almendras", 15, "almendras"],
-  ];
-  for (const [type, id, cantidad, nombre] of agregados) {
-    const grasa = dia.meals.reduce((t, m) => t + (m.grasaG ?? 0), 0);
+  // Con las porciones al máximo todavía falta algún macro (días con pocos hidratos o platos muy
+  // magros): se suma un complemento, de a uno, al macro que más falta, sin pasarse de calorías.
+  const complementos: Record<"h" | "g", [MealType, string, number, string][]> = {
+    h: [
+      ["desayuno", "fruta", 150, "fruta"],
+      ["merienda", "panIntegral", 30, "tostada integral"],
+      ["almuerzo", "arroz", 60, "arroz"],
+      ["media", "fruta", 150, "fruta"],
+      ["cena", "papa", 200, "papa"],
+      ["merienda", "fruta", 150, "fruta"],
+      ["desayuno", "avenaCruda", 30, "avena"],
+      ["desayuno", "panIntegral", 30, "tostada integral"],
+      ["cena", "panIntegral", 30, "pan integral"],
+    ],
+    g: [
+      ["almuerzo", "aceiteOliva", 5, "oliva"],
+      ["cena", "aceiteOliva", 5, "oliva"],
+      ["media", "almendras", 15, "almendras"],
+      ["desayuno", "palta", 40, "palta"],
+      ["merienda", "almendras", 15, "almendras"],
+    ],
+  };
+  const usados = { h: 0, g: 0 };
+  for (let paso = 0; paso < 14; paso++) {
+    const suma = (key: "hcG" | "grasaG") => dia.meals.reduce((t, m) => t + (m[key] ?? 0), 0);
     const kcal = dia.meals.reduce((t, m) => t + calcMealKcal(m.meal), 0);
-    if (grasa >= grasaMeta * 0.8 || (metaKcal && kcal >= metaKcal * 1.05)) break;
+    if (metaKcal && kcal >= metaKcal * 1.05) break;
+    const ratios = { h: suma("hcG") / metas.h, g: suma("grasaG") / metas.g };
+    const falta = (["h", "g"] as const)
+      .filter((k) => ratios[k] < 0.9 && usados[k] < complementos[k].length)
+      .sort((a, b) => ratios[a] - ratios[b])[0];
+    if (!falta) break;
+    const [type, id, cantidad, nombre] = complementos[falta][usados[falta]++];
     if (hasIngredient(base[type], id)) continue;
     // el aceite va para condimentar platos con verdura, no una merienda de pan con maní
     const conVerdura = base[type].ingredientes.some((i) => ingredienteNutri[i.id]?.verdura);
@@ -1513,9 +1593,56 @@ function diaPersonalizado(
     const meal = cloneMeal(base[type]);
     meal.ingredientes.push({ id, cantidad });
     meal.name = `${meal.name} + ${nombre}`;
+    const conComplemento = { ...base, [type]: meal };
+    const prueba = armar(conComplemento);
+    // si con el complemento el día se pasa de calorías, no va (y no se prueban más)
+    if (metaKcal && kcalDe(prueba) > metaKcal * 1.05) break;
+    base = conComplemento;
+    dia = prueba;
+  }
+
+  // Sobra proteína aun con la carne al mínimo (la proteína viene de lácteos, legumbres, frutos
+  // secos): la leche con proteínas pasa a leche común, de a una.
+  for (const type of ["cena", "merienda", "media", "desayuno"] as const) {
+    if (dia.proteina <= objetivo * PROTEINA_MARGEN_ALTO) break;
+    if (!hasIngredient(base[type], "batidoProte") || base[type].ingredientes.length < 2) continue;
+    base = { ...base, [type]: sinBatido(base[type]) };
+    dia = armar(base);
+  }
+  for (const type of ["merienda", "media", "desayuno", "cena"] as const) {
+    if (dia.proteina <= objetivo * PROTEINA_MARGEN_ALTO) break;
+    if (!hasIngredient(base[type], "lecheProte")) continue;
+    const meal = cloneMeal(base[type]);
+    meal.ingredientes = meal.ingredientes.map((i) =>
+      i.id === "lecheProte" ? { ...i, id: "lecheDescremada" } : i,
+    );
+    meal.name = meal.name.replace(/[Ll]eche con proteínas/, (m) =>
+      m[0] === "L" ? "Leche descremada" : "leche descremada",
+    );
     base = { ...base, [type]: meal };
     dia = armar(base);
   }
+
+  // Se pasa de calorías: se sacan complementos agregados (de los que suman más), de a uno.
+  const quitables = ["aceiteOliva", "almendras", "palta", "panIntegral", "fruta", "banana"];
+  for (let paso = 0; paso < 6 && metaKcal && kcalDe(dia) > metaKcal * 1.07; paso++) {
+    const candidato = types
+      .flatMap((t) =>
+        base[t].ingredientes
+          .filter((i) => quitables.includes(i.id) && base[t].ingredientes.length > 1)
+          .map((i) => ({ t, id: i.id })),
+      )
+      .at(0);
+    if (!candidato) break;
+    const meal = cloneMeal(base[candidato.t]);
+    const idx = meal.ingredientes.findIndex((i) => i.id === candidato.id);
+    meal.ingredientes.splice(idx, 1);
+    const nombre = ingredienteNutri[candidato.id]?.nombre ?? "";
+    meal.name = meal.name.replace(new RegExp(` \\+ ${nombre}$`), "");
+    base = { ...base, [candidato.t]: meal };
+    dia = armar(base);
+  }
+  const grasaMeta = Math.round(metas.g);
 
   // "3 huevos fritos + café": la cantidad del nombre es la del plan original, la real va en la porción
   const meals = dia.meals.map((m) => {
@@ -1538,3 +1665,38 @@ function diaPersonalizado(
     isWeekday: true,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Catálogo para la IA: la IA elige platos (o arma nuevos con estos ingredientes) y la app calcula
+// las cantidades. Un plato es "calculable" si todos sus ingredientes están en el catálogo.
+// ---------------------------------------------------------------------------
+
+/** El plato usa solo ingredientes del catálogo: sus macros y porciones las calcula la app. */
+export function platoCalculable(meal: Meal): boolean {
+  return meal.ingredientes.length > 0 && meal.ingredientes.every((i) => i.id in ingredienteNutri);
+}
+
+export interface IngredienteCatalogo {
+  id: string;
+  nombre: string;
+  /** "fija": porción fija (scoop / vaso), sin gramos. */
+  porcion: "gramos" | "fija";
+}
+
+export function catalogoIngredientes(): IngredienteCatalogo[] {
+  return Object.entries(ingredienteNutri).map(([id, ing]) => ({
+    id,
+    nombre: ing.porcionFija ?? ing.nombre,
+    porcion: ing.fixed !== undefined ? "fija" : "gramos",
+  }));
+}
+
+export function esIngredienteFijo(id: string): boolean {
+  return ingredienteNutri[id]?.fixed !== undefined;
+}
+
+export function esIngredienteConocido(id: string): boolean {
+  return id in ingredienteNutri;
+}
+
+export const MEAL_TYPES = Object.keys(MEAL_LABELS) as MealType[];

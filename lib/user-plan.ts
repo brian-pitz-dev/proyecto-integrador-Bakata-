@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthedUser } from "@/lib/supabase/auth";
 import {
   buildPlan,
+  priorizarZonas,
+  recortarCore,
   semanaDeRetome,
   type Disponibilidad,
   type Retome,
@@ -14,7 +16,8 @@ import { addDays, edadDesde, toISO, todayNormalized } from "@/lib/date";
 import type { UserProfile } from "@/lib/calorie-target";
 import type { MealBank } from "@/lib/meal-plan";
 import type { Routine } from "@/lib/gym-exercises";
-import { mealBankSchema, routinesSchema } from "@/lib/validation/coach";
+import { mealBankSchema, preferenciasSchema, storedRoutinesSchema } from "@/lib/validation/coach";
+import { aplicarMovimientos, CATEGORIA_MOVER, type Movimiento } from "@/lib/mover";
 import { historialDisponibilidadSchema } from "@/lib/validation/onboarding";
 
 export interface Perfil extends UserProfile {
@@ -42,6 +45,8 @@ export interface UserPlanContext {
   planIa: PlanIa;
   /** La semana en curso va más liviana porque la anterior quedó a medias (spec 009). */
   retome: Retome | null;
+  /** Días que la persona movió dentro de su semana (ya aplicados en `weeks`). */
+  movimientos: Movimiento[];
 }
 
 /** null si no hay sesión o todavía no completó el onboarding (proxy.ts ya debería haber redirigido antes de llegar acá). */
@@ -56,6 +61,7 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
     { data: eventoRows },
     { data: planIaRows },
     { data: completadoRows },
+    { data: moverRows },
   ] = await Promise.all([
     supabase.from("perfil").select("*").eq("user_id", user.id).maybeSingle(),
     supabase.from("evento").select("*").eq("user_id", user.id).order("fecha", { ascending: true }),
@@ -67,6 +73,14 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
       .eq("user_id", user.id)
       .eq("categoria", "completado")
       .gte("fecha", toISO(addDays(hoy, -14))),
+    // días movidos por la persona dentro de su semana (lib/mover.ts), en el orden en que los movió
+    supabase
+      .from("registro")
+      .select("fecha, nota")
+      .eq("user_id", user.id)
+      .eq("categoria", CATEGORIA_MOVER)
+      .gte("fecha", toISO(addDays(hoy, -400)))
+      .order("created_at", { ascending: true }),
   ]);
 
   if (!perfilRow) return null;
@@ -106,11 +120,30 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
   // si la fila no valida (o falta la columna) las semanas pasadas toman la disponibilidad actual
   const historial =
     historialDisponibilidadSchema.safeParse(perfilRow.disponibilidad_historial).data ?? [];
+  // Preferencias del registro / Coach / Perfil (user_metadata): objetivo (gym o eventos), zonas a
+  // priorizar (más días de piernas) y core (solo si lo pide). Editables por el usuario: se validan.
+  const { data: claims } = await supabase.auth.getClaims();
+  const pref = preferenciasSchema.safeParse(claims?.claims.user_metadata?.preferencias ?? {});
+  const zonas = pref.success ? pref.data.zonas : [];
+  const objetivo = pref.success ? pref.data.objetivo : undefined;
+  const cardio =
+    pref.success && pref.data.nivelCardio
+      ? { nivel: pref.data.nivelCardio, kmSemana: pref.data.kmSemana ?? null }
+      : undefined;
   const armar = (semanaRetome?: string) =>
-    buildPlan(profile.planStart, events, hoy, profile.disponibilidad, historial, semanaRetome);
+    buildPlan(profile.planStart, events, hoy, profile.disponibilidad, historial, semanaRetome, {
+      objetivo,
+      cardio,
+    });
   const completados = new Set((completadoRows ?? []).map((r) => r.fecha as string));
   const retome = semanaDeRetome(armar(), events, completados, hoy);
-  const weeks = armar(retome?.start);
+  const movimientos = (moverRows ?? [])
+    .filter((r) => typeof r.nota === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.nota))
+    .map((r) => ({ desde: r.fecha as string, hasta: r.nota as string }));
+  const weeks = aplicarMovimientos(
+    recortarCore(priorizarZonas(armar(retome?.start), zonas), zonas),
+    movimientos,
+  );
 
   // Se re-valida al leer: si una fila no cumple el schema, se ignora y queda el plan base.
   const planIa: PlanIa = {};
@@ -122,7 +155,7 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
         planIa.comidasUpdatedAt = row.updated_at;
       }
     } else if (row.tipo === "ejercicios") {
-      const parsed = routinesSchema.safeParse(row.contenido);
+      const parsed = storedRoutinesSchema.safeParse(row.contenido);
       if (parsed.success) {
         planIa.ejercicios = parsed.data;
         planIa.ejerciciosUpdatedAt = row.updated_at;
@@ -130,5 +163,5 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
     }
   }
 
-  return { profile, events, weeks, planIa, retome };
+  return { profile, events, weeks, planIa, retome, movimientos };
 }

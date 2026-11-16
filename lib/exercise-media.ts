@@ -7,7 +7,7 @@
  * lib/gym-exercises.ts; un ejercicio sin equivalente en esa base queda solo con video.
  *
  * Video: búsqueda en YouTube del nombre del ejercicio. Sirve para cualquier ejercicio,
- * incluidos los de las rutinas generadas con IA (que no tienen foto).
+ * incluidos los de rutinas viejas generadas con IA fuera del catálogo (sin foto).
  */
 
 const PHOTO_ID: Record<string, string> = {

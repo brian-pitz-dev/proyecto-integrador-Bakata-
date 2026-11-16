@@ -19,14 +19,22 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
-  const { eventos, ...perfil } = parsed.data;
+  const { eventos, preferencias, ...perfil } = parsed.data;
 
   const supabase = await createClient();
   const error = await guardarPerfilYEventos(supabase, user.id, perfil, eventos);
   if (error) return { ok: false, message: error };
 
+  // La IA arma su plan al entrar a la app (components/plan-inicial.tsx); si esto falla, queda el
+  // plan base y lo puede pedir desde Nutrición / Coach.
+  const { error: metaError } = await supabase.auth.updateUser({
+    data: { preferencias, plan_pendiente: true },
+  });
+  // la marca se lee del JWT (getClaims): se renueva para que el armado arranque al entrar
+  if (!metaError) await supabase.auth.refreshSession();
+
   revalidatePath("/calendario");
   revalidatePath("/nutricion");
-  revalidatePath("/estadisticas");
+  revalidatePath("/progreso");
   redirect("/calendario");
 }
