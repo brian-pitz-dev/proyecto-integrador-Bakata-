@@ -31,7 +31,9 @@ export async function saveLog(input: {
 
   const parsed = saveLogSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, message: "Datos inválidos." };
+    // el rango por categoría trae un mensaje para el usuario; el resto de los errores, no
+    const rango = parsed.error.issues.find((i) => i.code === "custom");
+    return { ok: false, message: rango?.message ?? "Datos inválidos." };
   }
 
   const supabase = await createClient();

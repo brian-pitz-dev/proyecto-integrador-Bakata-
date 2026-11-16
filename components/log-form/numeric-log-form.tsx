@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton, useLogSubmit } from "@/components/log-form/registro-category-card";
 import type { Categoria } from "@/lib/types";
+import { RANGO_VALOR } from "@/lib/validation/registro";
 import { toISO, addDays, todayNormalized } from "@/lib/date";
 
 interface NumericLogFormProps {
@@ -59,7 +60,8 @@ export function NumericLogForm({
           name="valor"
           type="number"
           step={step}
-          min="0"
+          min={RANGO_VALOR[categoria].min}
+          max={RANGO_VALOR[categoria].max}
           required
           aria-describedby={categoria === "peso" ? `${fieldId}-ayuda` : undefined}
         />
