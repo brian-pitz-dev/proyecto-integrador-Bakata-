@@ -14,7 +14,11 @@ import {
  */
 export default function Loading() {
   return (
-    <PaginaCargando label="Cargando nutrición" className="max-w-4xl gap-10">
+    <PaginaCargando
+      title="Cargando tu nutrición"
+      detail="Calculando tu meta de calorías y las comidas del día."
+      className="max-w-4xl gap-10"
+    >
       <EncabezadoCargando ancho="w-52" />
 
       {/* Tu plan de comidas */}
@@ -64,8 +68,8 @@ export default function Loading() {
           >
             <Bloque className="h-6 w-24 shrink-0 sm:w-32" />
             <div className="grid flex-1 gap-2.5">
-              <Bloque className="h-4 w-56 max-w-full" />
-              <Bloque className="h-3.5 w-72 max-w-full" />
+              <Bloque className="h-4 w-full max-w-56" />
+              <Bloque className="h-3.5 w-full max-w-72" />
             </div>
             <div className="grid shrink-0 grid-cols-3 gap-4 sm:w-56">
               {Array.from({ length: 3 }).map((_, j) => (

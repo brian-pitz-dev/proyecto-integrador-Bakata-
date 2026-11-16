@@ -18,7 +18,11 @@ function Campo() {
 /** Skeleton de Mi perfil: misma estructura que la página real (semana, datos, eventos, cuenta). */
 export default function Loading() {
   return (
-    <PaginaCargando label="Cargando perfil" className="max-w-4xl gap-10">
+    <PaginaCargando
+      title="Cargando tu perfil"
+      detail="Trayendo tus datos, tu semana y tus eventos."
+      className="max-w-4xl gap-10"
+    >
       <EncabezadoCargando ancho="w-48" />
 
       <TarjetaCargando>
@@ -44,7 +48,7 @@ export default function Loading() {
             <Bloque className="size-10 rounded-lg" />
             <div className="grid flex-1 gap-2">
               <Bloque className="h-4 w-40" />
-              <Bloque className="h-3.5 w-56 max-w-full" />
+              <Bloque className="h-3.5 w-full max-w-56" />
             </div>
           </div>
         ))}

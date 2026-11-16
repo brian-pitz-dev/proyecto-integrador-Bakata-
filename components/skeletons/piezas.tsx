@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LoadingScreen } from "@/components/loading-screen";
 import { SKELETON, SURFACE } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
@@ -11,20 +12,36 @@ export function Bloque({ className }: { className?: string }) {
   return <div className={cn(SKELETON, className)} />;
 }
 
-/** Contenedor de la página con el aviso de carga para lectores de pantalla. */
+/**
+ * Contenedor de la página: el skeleton queda tenue de fondo y encima, centrado en la pantalla,
+ * el spinner de marca con qué se está preparando (solos, los bloques parecían una página vacía).
+ */
 export function PaginaCargando({
-  label,
+  title,
+  detail,
   className,
   children,
 }: {
-  label: string;
+  title: string;
+  detail: string;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <div className={cn("mx-auto grid w-full", className)} aria-busy="true" aria-label={label}>
-      {children}
-    </div>
+    <>
+      <div
+        className={cn("mx-auto grid w-full opacity-40", className)}
+        aria-busy="true"
+        aria-label={title}
+      >
+        {children}
+      </div>
+      <LoadingScreen
+        className="pointer-events-none fixed inset-0 z-10 min-h-0"
+        title={title}
+        detail={detail}
+      />
+    </>
   );
 }
 
@@ -33,7 +50,7 @@ export function EncabezadoCargando({ ancho = "w-56" }: { ancho?: string }) {
   return (
     <div className="grid gap-3">
       <Bloque className={cn("h-12 rounded-2xl", ancho)} />
-      <Bloque className="h-4 w-96 max-w-full" />
+      <Bloque className="h-4 w-full max-w-96" />
     </div>
   );
 }
@@ -52,7 +69,7 @@ export function TarjetaCargando({
     <div className={cn(SURFACE, "grid gap-4 p-6", className)}>
       <div className="grid gap-2">
         <Bloque className="h-6 w-48 rounded-xl" />
-        <Bloque className="h-3.5 w-72 max-w-full" />
+        <Bloque className="h-3.5 w-full max-w-72" />
       </div>
       {children ??
         Array.from({ length: lineas }).map((_, i) => (

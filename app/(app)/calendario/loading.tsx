@@ -12,7 +12,7 @@ function Sesion({ corta = false }: { corta?: boolean }) {
   return (
     <div className="grid gap-2 border-l-[3px] border-primary/15 pl-3">
       <Bloque className="h-4 w-36" />
-      {!corta && <Bloque className="h-3.5 w-64 max-w-full" />}
+      {!corta && <Bloque className="h-3.5 w-full max-w-64" />}
     </div>
   );
 }
@@ -23,7 +23,11 @@ function Sesion({ corta = false }: { corta?: boolean }) {
  */
 export default function Loading() {
   return (
-    <PaginaCargando label="Cargando calendario" className="max-w-4xl gap-14">
+    <PaginaCargando
+      title="Cargando tu calendario"
+      detail="Armando las semanas y sesiones de tu plan."
+      className="max-w-4xl gap-14"
+    >
       <EncabezadoCargando />
 
       {/* Tus eventos */}
@@ -37,7 +41,7 @@ export default function Loading() {
                 <Bloque className="h-5 w-16" />
               </div>
               <Bloque className="h-5 w-40 rounded-lg" />
-              <Bloque className="h-3.5 w-48 max-w-full" />
+              <Bloque className="h-3.5 w-full max-w-48" />
             </div>
           ))}
         </div>

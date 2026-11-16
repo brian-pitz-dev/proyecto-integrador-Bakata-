@@ -22,10 +22,14 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
  */
 export default function Loading() {
   return (
-    <PaginaCargando label="Cargando progreso" className="max-w-5xl gap-12">
+    <PaginaCargando
+      title="Cargando tu progreso"
+      detail="Juntando tus registros de peso, sueño y entrenamientos."
+      className="max-w-5xl gap-12"
+    >
       <EncabezadoCargando ancho="w-64" />
 
-      <Bloque className="h-9 w-96 max-w-full" />
+      <Bloque className="h-9 w-full max-w-96" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -35,7 +39,7 @@ export default function Loading() {
           >
             <Bloque className="size-9 rounded-xl" />
             <Bloque className="h-8 w-20 rounded-xl" />
-            <Bloque className="h-3.5 w-32 max-w-full" />
+            <Bloque className="h-3.5 w-full max-w-32" />
           </div>
         ))}
       </div>
@@ -54,7 +58,7 @@ export default function Loading() {
 
       <Seccion titulo="w-48">
         <TarjetaCargando>
-          <div className="flex gap-3">
+          <div className="flex gap-3 overflow-hidden">
             {Array.from({ length: 3 }).map((_, i) => (
               <Bloque key={i} className="aspect-[3/4] w-28 rounded-2xl" />
             ))}

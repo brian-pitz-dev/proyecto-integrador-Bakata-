@@ -10,7 +10,11 @@ import {
 /** Skeleton del Coach: misma estructura que la página real (tu semana, chat y tus rutinas). */
 export default function Loading() {
   return (
-    <PaginaCargando label="Cargando coach" className="max-w-4xl gap-10">
+    <PaginaCargando
+      title="Abriendo el coach"
+      detail="Preparando tu perfil, tus eventos y la fase en la que estás."
+      className="max-w-4xl gap-10"
+    >
       <EncabezadoCargando ancho="w-40" />
 
       <TarjetaCargando lineas={4} />
