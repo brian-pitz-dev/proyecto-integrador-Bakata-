@@ -68,8 +68,14 @@ export default async function globalSetup() {
   );
 }
 
-/** Borra los registros y las fotos que dejan los tests (todo con fecha de ANIO_E2E). */
+/**
+ * Borra los registros y las fotos que dejan los tests (todo con fecha de ANIO_E2E) y las lesiones
+ * (la cuenta es solo para tests, y una lesión que quedó de una corrida fallida cambia el plan).
+ */
 async function limpiar(supabase: SupabaseClient, userId: string) {
+  const { error: errorLesiones } = await supabase.from("lesion").delete().eq("user_id", userId);
+  if (errorLesiones) throw errorLesiones;
+
   const { error } = await supabase
     .from("registro")
     .delete()

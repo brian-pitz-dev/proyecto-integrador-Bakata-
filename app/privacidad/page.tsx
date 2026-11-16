@@ -24,12 +24,13 @@ const SECCIONES = [
       "Tus eventos y lo que registres en la app: peso, calorías, sueño, tiradas, días completados y resultados.",
       "Las fotos de progreso que subas. Son privadas: solo vos podés verlas. Antes de subirlas, la app las achica y les borra los datos del archivo, incluida la ubicación.",
       "Los planes que generes con el Coach y un contador de cuántas consultas usaste cada día.",
+      "Las lesiones que cargues (tipo, zona, gravedad, fechas y una nota). Son datos de salud: solo se guardan si aceptás expresamente cuando cargás la primera, y solo vos podés verlas.",
     ],
   },
   {
     titulo: "Para qué los usamos",
     texto: [
-      "Solo para calcular tu plan, tus calorías y tus estadísticas, y para que el Coach te responda con contexto. No los vendemos, no los usamos para publicidad y no los compartimos con nadie más que los servicios de abajo.",
+      "Solo para calcular tu plan, tus calorías y tus estadísticas, y para que el Coach te responda con contexto. Las lesiones se usan únicamente para ajustar tu plan de ejercicio y para que el Coach las tenga en cuenta. No los vendemos, no los usamos para publicidad y no los compartimos con nadie más que los servicios de abajo.",
     ],
   },
   {
@@ -37,13 +38,13 @@ const SECCIONES = [
     texto: [
       "Supabase guarda la base de datos, las cuentas y las fotos (servidores en San Pablo, Brasil). Netlify aloja la app. Cloudflare Turnstile verifica que no seas un bot al registrarte o iniciar sesión.",
       "Si conectás Strava, guardamos el permiso que nos da para leer tus actividades y, cuando tocás Importar, traemos tus corridas y caminatas a tus registros. No le mandamos nada a Strava. Al desconectarlo o borrar tu cuenta, le pedimos a Strava que revoque ese permiso.",
-      "El Coach usa Google Gemini en su nivel gratuito. Cuando le escribís o le pedís un plan, Google recibe tu mensaje y un resumen de tu plan (edad, sexo, altura, peso, metas, eventos, fase y registros recientes), pero no tu nombre ni tu email. En el nivel gratuito, Google puede usar ese contenido para mejorar sus productos: no le escribas al Coach datos que no quieras compartir.",
+      "El Coach usa Google Gemini en su nivel gratuito. Cuando le escribís o le pedís un plan, Google recibe tu mensaje y un resumen de tu plan (edad, sexo, altura, peso, metas, eventos, lesiones activas, fase y registros recientes), pero no tu nombre ni tu email. En el nivel gratuito, Google puede usar ese contenido para mejorar sus productos: no le escribas al Coach datos que no quieras compartir.",
     ],
   },
   {
     titulo: "Tus derechos",
     texto: [
-      "Desde Mi perfil podés corregir tus datos, descargar una copia de todo lo que guardamos y borrar tu cuenta. Al borrar la cuenta se eliminan tu perfil, tus eventos, tus registros, tus fotos y tus planes, y no se puede deshacer.",
+      "Desde Mi perfil podés corregir tus datos, descargar una copia de todo lo que guardamos y borrar tu cuenta. Cada lesión se puede borrar sola desde Progreso. Al borrar la cuenta se eliminan tu perfil, tus eventos, tus registros, tus lesiones, tus fotos y tus planes, y no se puede deshacer.",
     ],
   },
   {

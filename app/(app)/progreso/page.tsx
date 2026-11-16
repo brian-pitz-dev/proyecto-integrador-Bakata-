@@ -26,6 +26,7 @@ import { getAuthedUser } from "@/lib/supabase/auth";
 import { listarFotos, type Foto } from "@/lib/fotos";
 import { FotosProgreso } from "@/components/stats/fotos-progreso";
 import { StravaCard } from "@/components/stats/strava-card";
+import { LesionesCard } from "@/components/stats/lesiones-card";
 import { stravaConfigurado } from "@/lib/strava";
 import { checkGymStreak } from "@/lib/streaks";
 import { calcularMeta, computeBmrCalibrado } from "@/lib/calorie-target";
@@ -132,12 +133,14 @@ export default async function EstadisticasPage({
     fotos,
     strava,
     { strava: avisoStrava },
+    usuario,
   ] = await Promise.all([
     fetchData(),
     getUserPlanContext(),
     fetchFotos(),
     fetchStrava(),
     searchParams,
+    getAuthedUser(),
   ]);
   if (!planContext) return null; // proxy.ts ya redirige a /onboarding antes de esto
   const { profile, events, weeks } = planContext;
@@ -523,6 +526,11 @@ export default async function EstadisticasPage({
           </ul>
         </section>
       )}
+
+      <LesionesCard
+        lesiones={planContext.lesiones}
+        consentida={usuario?.saludConsentida ?? false}
+      />
     </div>
   );
 }

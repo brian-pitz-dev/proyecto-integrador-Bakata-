@@ -26,6 +26,10 @@ export interface Session {
   coreKey?: "base" | "light";
   /** Tope de ejercicios de la rutina cuando el usuario tiene poco tiempo por sesión. */
   maxEjercicios?: number;
+  /** Por qué cambió por una lesión (specs/011-lesiones): "por tu esguince de tobillo/pie". */
+  motivo?: string;
+  /** Label de la sesión que reemplazó (lesión moderada): "En lugar de: Cinta / Cardio". */
+  reemplaza?: string;
 }
 
 /** Cuándo puede entrenar el usuario: días 0 = lunes … 6 = domingo, y minutos por sesión. */
@@ -587,8 +591,11 @@ export function buildPlan(
   today: Date,
   disp?: Disponibilidad,
   historial: DisponibilidadPasada[] = [],
-  /** Lunes (ISO) de la semana de retome, de semanaDeRetome(). */
-  retome?: string,
+  /**
+   * Lunes (ISO) de las semanas que van un escalón más livianas: la de retome (semanaDeRetome()) y
+   * las de una lesión leve que afecta el cardio (semanasLivianas(), lib/lesiones.ts).
+   */
+  retome?: string | readonly string[],
   opciones: {
     /** Sin evento cerca, gym ("musculo"/"bajar") o mantenimiento de running (default). */
     objetivo?: ObjetivoEntreno;
@@ -723,11 +730,13 @@ export function buildPlan(
   const maintenanceWeeks = Math.max(horizonWeeks, 4);
   pushContentWeeks(out, cursor, wnum, maintenanceWeeks, base.fn, 1, base.key, base.sinEventos);
 
+  const livianas = [retome ?? []].flat();
   const isoWeeks = out.map((w, i) => {
     const start = toISO(w.start);
     // las semanas que ya empezaron antes de un cambio de días/minutos conservan la disponibilidad de entonces
     const base = pasadas.find((h) => start < h.hasta) ?? disp;
-    const d = base && start === retome ? { ...base, minutos: minutosRetome(base.minutos) } : base;
+    const d =
+      base && livianas.includes(start) ? { ...base, minutos: minutosRetome(base.minutos) } : base;
     const esRetome = d !== base;
     const cfg = d ? adaptWeek(w.cfg, w.phaseKey, w.num, d) : w.cfg;
     // Antes del registro no hay sesiones: si no, la alerta de gym (lib/streaks.ts) las cuenta

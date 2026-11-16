@@ -17,6 +17,8 @@ export async function getAuthedUser(): Promise<{
   nombre: string | null;
   email: string | null;
   tutorialVisto: boolean;
+  /** Ya aceptó guardar datos de salud (lesiones, specs/011-lesiones). */
+  saludConsentida: boolean;
 } | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
@@ -28,5 +30,6 @@ export async function getAuthedUser(): Promise<{
     nombre: typeof meta.nombre === "string" ? meta.nombre : null,
     email: typeof data.claims.email === "string" ? data.claims.email : null,
     tutorialVisto: meta.tutorial_visto === true,
+    saludConsentida: typeof meta.salud_consentida_at === "string",
   };
 }

@@ -19,6 +19,7 @@ import type { Routine } from "@/lib/gym-exercises";
 import { mealBankSchema, preferenciasSchema, storedRoutinesSchema } from "@/lib/validation/coach";
 import { aplicarMovimientos, CATEGORIA_MOVER, type Movimiento } from "@/lib/mover";
 import { historialDisponibilidadSchema } from "@/lib/validation/onboarding";
+import { aplicarLesiones, semanasLivianas, type Lesion } from "@/lib/lesiones";
 
 export interface Perfil extends UserProfile {
   pesoInicialKg: number;
@@ -47,6 +48,8 @@ export interface UserPlanContext {
   retome: Retome | null;
   /** Días que la persona movió dentro de su semana (ya aplicados en `weeks`). */
   movimientos: Movimiento[];
+  /** Todas sus lesiones (specs/011-lesiones), activas y pasadas; ya aplicadas en `weeks`. */
+  lesiones: Lesion[];
 }
 
 /** null si no hay sesión o todavía no completó el onboarding (proxy.ts ya debería haber redirigido antes de llegar acá). */
@@ -62,6 +65,7 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
     { data: planIaRows },
     { data: completadoRows },
     { data: moverRows },
+    { data: lesionRows },
   ] = await Promise.all([
     supabase.from("perfil").select("*").eq("user_id", user.id).maybeSingle(),
     supabase.from("evento").select("*").eq("user_id", user.id).order("fecha", { ascending: true }),
@@ -81,6 +85,11 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
       .eq("categoria", CATEGORIA_MOVER)
       .gte("fecha", toISO(addDays(hoy, -400)))
       .order("created_at", { ascending: true }),
+    supabase
+      .from("lesion")
+      .select("id, tipo, zona, lado, gravedad, desde, hasta, nota")
+      .eq("user_id", user.id)
+      .order("desde", { ascending: false }),
   ]);
 
   if (!perfilRow) return null;
@@ -130,19 +139,24 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
     pref.success && pref.data.nivelCardio
       ? { nivel: pref.data.nivelCardio, kmSemana: pref.data.kmSemana ?? null }
       : undefined;
-  const armar = (semanaRetome?: string) =>
-    buildPlan(profile.planStart, events, hoy, profile.disponibilidad, historial, semanaRetome, {
+  const armar = (livianas?: string[]) =>
+    buildPlan(profile.planStart, events, hoy, profile.disponibilidad, historial, livianas, {
       objetivo,
       cardio,
     });
   const completados = new Set((completadoRows ?? []).map((r) => r.fecha as string));
-  const retome = semanaDeRetome(armar(), events, completados, hoy);
+  // si la tabla no está (migración sin aplicar) o falla, el plan sigue sin ajustes por lesión
+  const lesiones = (lesionRows ?? []) as Lesion[];
+  const base = armar();
+  const retome = semanaDeRetome(base, events, completados, hoy);
+  // lesión leve en piernas: esas semanas van un escalón más livianas, como el retome
+  const livianas = [...(retome ? [retome.start] : []), ...semanasLivianas(base, lesiones)];
   const movimientos = (moverRows ?? [])
     .filter((r) => typeof r.nota === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.nota))
     .map((r) => ({ desde: r.fecha as string, hasta: r.nota as string }));
-  const weeks = aplicarMovimientos(
-    recortarCore(priorizarZonas(armar(retome?.start), zonas), zonas),
-    movimientos,
+  const weeks = aplicarLesiones(
+    aplicarMovimientos(recortarCore(priorizarZonas(armar(livianas), zonas), zonas), movimientos),
+    lesiones,
   );
 
   // Se re-valida al leer: si una fila no cumple el schema, se ignora y queda el plan base.
@@ -163,5 +177,5 @@ export async function getUserPlanContext(): Promise<UserPlanContext | null> {
     }
   }
 
-  return { profile, events, weeks, planIa, retome, movimientos };
+  return { profile, events, weeks, planIa, retome, movimientos, lesiones };
 }

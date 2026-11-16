@@ -59,6 +59,16 @@ export function SessionList({
               {s.detail}
             </p>
           )}
+          {s.motivo && (
+            <p
+              className={cn(
+                "mt-1 text-xs font-medium first-letter:uppercase",
+                inverse ? "text-primary dark:text-white/80" : "text-primary",
+              )}
+            >
+              {s.reemplaza ? `En lugar de: ${s.reemplaza} · ${s.motivo}` : s.motivo}
+            </p>
+          )}
           <ExerciseBlock
             gymKey={s.gymKey}
             coreKey={s.coreKey}

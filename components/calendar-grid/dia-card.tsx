@@ -40,7 +40,10 @@ export function DiaCard({
         <span className="w-14 shrink-0 text-center tabular-nums">
           {dayLabel} {dia}
         </span>
-        <span>{sessions[0].label}</span>
+        <span>
+          {sessions[0].label}
+          {sessions[0].motivo && ` · ${sessions[0].motivo}`}
+        </span>
       </div>
     );
   }
