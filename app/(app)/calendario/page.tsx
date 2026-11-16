@@ -30,6 +30,8 @@ async function fetchCargas(): Promise<Carga[]> {
     .eq("categoria", CATEGORIA_CARGA)
     .gte("fecha", toISO(addDays(todayNormalized(), -365)))
     .order("fecha", { ascending: false })
+    // si quedaron dos del mismo día (saveCarga no pudo borrar la vieja), gana la última cargada
+    .order("created_at", { ascending: false })
     .limit(1000);
   return (data ?? [])
     .filter((r) => r.nota)

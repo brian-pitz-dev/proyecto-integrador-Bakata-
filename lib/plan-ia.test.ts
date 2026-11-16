@@ -17,6 +17,12 @@ describe("meses de rutinas", () => {
     expect(estadoMes("2026-11-16", "2026-12-06")).toMatchObject({ semana: 3, terminado: false });
     expect(estadoMes("2026-11-16", "2026-12-13")).toMatchObject({ semana: 4, terminado: false });
     expect(estadoMes("2026-11-16", "2026-12-14")).toMatchObject({ terminado: true });
+    // registrada un miércoles: el mes arranca el lunes siguiente, y hasta entonces es la semana 1
+    expect(estadoMes("2026-11-23", "2026-11-18")).toEqual({
+      semana: 1,
+      terminado: false,
+      diasRestantes: 28,
+    });
   });
 
   it("el mes son 4 semanas enteras: si arranca un día que no es lunes, empieza el lunes siguiente", () => {

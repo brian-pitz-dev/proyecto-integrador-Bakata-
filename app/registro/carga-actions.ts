@@ -33,28 +33,36 @@ export async function saveCarga(input: {
   }
 
   const supabase = await createClient();
-  const { error: deleteError } = await supabase
+  // primero la nueva y después se borran las otras: si el insert falla, la carga anterior queda
+  let nueva: string | null = null;
+  if (kg !== null) {
+    const { data, error } = await supabase
+      .from("registro")
+      .insert([
+        { categoria: CATEGORIA_CARGA, fecha, valor: kg, nota: ejercicio, user_id: user.id },
+      ])
+      .select("id")
+      .single();
+    if (error) {
+      console.error("saveCarga insert", error);
+      return { ok: false, message: "No se pudo guardar, probá de nuevo." };
+    }
+    nueva = data.id;
+  }
+
+  let anteriores = supabase
     .from("registro")
     .delete()
     .eq("user_id", user.id)
     .eq("categoria", CATEGORIA_CARGA)
     .eq("fecha", fecha)
     .eq("nota", ejercicio);
+  if (nueva) anteriores = anteriores.neq("id", nueva);
+  const { error: deleteError } = await anteriores;
   if (deleteError) {
     console.error("saveCarga delete", deleteError);
-    return { ok: false, message: "No se pudo guardar, probá de nuevo." };
-  }
-
-  if (kg !== null) {
-    const { error } = await supabase
-      .from("registro")
-      .insert([
-        { categoria: CATEGORIA_CARGA, fecha, valor: kg, nota: ejercicio, user_id: user.id },
-      ]);
-    if (error) {
-      console.error("saveCarga insert", error);
-      return { ok: false, message: "No se pudo guardar, probá de nuevo." };
-    }
+    // con kg ya quedó guardada la nueva (gana al leer, es la última); sin kg no se borró nada
+    if (kg === null) return { ok: false, message: "No se pudo borrar, probá de nuevo." };
   }
 
   return { ok: true };

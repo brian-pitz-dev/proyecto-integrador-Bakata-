@@ -37,24 +37,35 @@ export async function fijarDelDia(
   for (const clave of ["nota", "peso", "grasa"] as const) {
     const valor = datos[clave];
     if (valor === undefined) continue;
-    const borrar = await supabase
+    // primero la nueva y después se borran las otras: si el insert falla, el dato anterior queda
+    let nueva: string | null = null;
+    if (valor !== null) {
+      const { data, error } = await supabase
+        .from("registro")
+        .insert([
+          {
+            categoria: CATEGORIA[clave],
+            fecha,
+            valor: typeof valor === "number" ? valor : 0,
+            nota: typeof valor === "string" ? valor : null,
+            user_id: userId,
+          },
+        ])
+        .select("id")
+        .single();
+      if (error) throw error;
+      nueva = data.id;
+    }
+    let anteriores = supabase
       .from("registro")
       .delete()
       .eq("user_id", userId)
       .eq("categoria", CATEGORIA[clave])
       .eq("fecha", fecha);
+    if (nueva) anteriores = anteriores.neq("id", nueva);
+    // si falla con un dato nuevo ya guardado, igual gana al leer: listarFotos toma el último cargado
+    const borrar = await anteriores;
     if (borrar.error) throw borrar.error;
-    if (valor === null) continue;
-    const { error } = await supabase.from("registro").insert([
-      {
-        categoria: CATEGORIA[clave],
-        fecha,
-        valor: typeof valor === "number" ? valor : 0,
-        nota: typeof valor === "string" ? valor : null,
-        user_id: userId,
-      },
-    ]);
-    if (error) throw error;
   }
 }
 

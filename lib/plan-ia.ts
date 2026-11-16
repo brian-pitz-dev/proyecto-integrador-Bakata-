@@ -165,8 +165,12 @@ export const SEMANAS_POR_MES = 4;
  */
 export function estadoMes(cicloInicio: string | undefined, hoy: string) {
   if (!cicloInicio) return null;
-  const dias = Math.floor(
-    (Date.parse(`${hoy}T00:00:00Z`) - Date.parse(`${cicloInicio}T00:00:00Z`)) / 86_400_000,
+  // antes del lunes en que arranca el mes (registrada a mitad de semana) cuenta como la semana 1
+  const dias = Math.max(
+    0,
+    Math.floor(
+      (Date.parse(`${hoy}T00:00:00Z`) - Date.parse(`${cicloInicio}T00:00:00Z`)) / 86_400_000,
+    ),
   );
   const semana = Math.floor(dias / 7) + 1;
   return {
