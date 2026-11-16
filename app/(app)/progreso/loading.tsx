@@ -17,12 +17,12 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
 }
 
 /**
- * Skeleton de Estadísticas: misma estructura que la página real (avisos, resumen, progreso,
+ * Skeleton de Progreso: misma estructura que la página real (avisos, resumen, progreso,
  * evolución, fotos y registros).
  */
 export default function Loading() {
   return (
-    <PaginaCargando label="Cargando estadísticas" className="max-w-5xl gap-12">
+    <PaginaCargando label="Cargando progreso" className="max-w-5xl gap-12">
       <EncabezadoCargando ancho="w-64" />
 
       <Bloque className="h-9 w-96 max-w-full" />

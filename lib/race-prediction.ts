@@ -10,7 +10,7 @@ export interface Esfuerzo {
   seg: number;
 }
 
-/** Más lento que esto es caminata, no corrida (mismo corte que el ritmo promedio de Estadísticas). */
+/** Más lento que esto es caminata, no corrida (mismo corte que el ritmo promedio de Progreso). */
 const RITMO_MAX_CORRIDA = 10 * 60;
 /** Solo cuentan las corridas recientes: reflejan la forma actual. */
 const VENTANA_DIAS = 60;

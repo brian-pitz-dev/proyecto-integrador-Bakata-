@@ -9,7 +9,7 @@ import type { Categoria, ActionResult } from "@/lib/types";
 
 function revalidateAffectedRoutes() {
   revalidatePath("/calendario");
-  revalidatePath("/estadisticas");
+  revalidatePath("/progreso");
 }
 
 /** Equivalente a saveLog(categoria, fecha, valor, nota) de plan_vida_2026.html. */

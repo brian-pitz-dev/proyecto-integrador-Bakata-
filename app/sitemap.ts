@@ -5,7 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // "/" y "/login" son noindex (ver metadata.robots en sus respectivos page.tsx) — no van acá.
-  const routes = ["/calendario", "/nutricion", "/estadisticas", "/coach"];
+  const routes = ["/calendario", "/nutricion", "/progreso", "/coach"];
 
   return routes.map((route) => ({
     url: `${BASE_URL}${route}`,

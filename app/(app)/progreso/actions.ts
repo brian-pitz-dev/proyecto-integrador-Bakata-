@@ -77,7 +77,7 @@ export async function subirFoto(formData: FormData): Promise<ActionResult> {
     return { ok: false, message: "No se pudo subir la foto." };
   }
 
-  revalidatePath("/estadisticas");
+  revalidatePath("/progreso");
   // los vacíos no pisan lo que ya había (reemplazar la foto de un día no borra sus datos)
   const datos = Object.fromEntries(Object.entries(valid.datos).filter(([, v]) => v !== null));
   try {
@@ -105,7 +105,7 @@ export async function guardarDatosFoto(fecha: unknown, cambios: unknown): Promis
     console.error("datos de foto", error);
     return { ok: false, message: "No se pudieron guardar los datos." };
   }
-  revalidatePath("/estadisticas");
+  revalidatePath("/progreso");
   return { ok: true, message: "Datos guardados." };
 }
 
@@ -124,7 +124,7 @@ export async function borrarFoto(fecha: unknown): Promise<ActionResult> {
     console.error("datos de foto", e),
   );
 
-  revalidatePath("/estadisticas");
+  revalidatePath("/progreso");
   return { ok: true, message: "Foto borrada." };
 }
 
@@ -145,7 +145,7 @@ export async function importarStrava(): Promise<ActionResult> {
     return { ok: false, message: "No se pudo importar de Strava. Probá de nuevo más tarde." };
   }
   if (cargadas === null) return { ok: false, message: "Tu cuenta de Strava no está conectada." };
-  revalidatePath("/estadisticas");
+  revalidatePath("/progreso");
   return {
     ok: true,
     message: cargadas
@@ -163,6 +163,6 @@ export async function desconectarStrava(): Promise<ActionResult> {
     console.error("strava desconectar", error);
     return { ok: false, message: "No se pudo desconectar Strava." };
   }
-  revalidatePath("/estadisticas");
+  revalidatePath("/progreso");
   return { ok: true, message: "Strava desconectado. Lo que ya importaste queda." };
 }

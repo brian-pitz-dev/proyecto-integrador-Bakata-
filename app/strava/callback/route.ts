@@ -14,14 +14,14 @@ export async function GET(request: NextRequest) {
   const jar = await cookies();
   const state = jar.get("strava_state")?.value;
   jar.delete({ name: "strava_state", path: "/strava" });
-  if (!state || params.get("state") !== state) redirect("/estadisticas?strava=error#strava");
+  if (!state || params.get("state") !== state) redirect("/progreso?strava=error#strava");
 
   const code = params.get("code");
   // "Cancelar" en Strava vuelve con error=access_denied
-  if (params.get("error") || !code) redirect("/estadisticas?strava=cancelado#strava");
+  if (params.get("error") || !code) redirect("/progreso?strava=cancelado#strava");
   // el usuario puede destildar el permiso de actividades en la pantalla de Strava
   if (!(params.get("scope") ?? "").split(",").includes(SCOPE)) {
-    redirect("/estadisticas?strava=permiso#strava");
+    redirect("/progreso?strava=permiso#strava");
   }
 
   let ok = true;
@@ -31,5 +31,5 @@ export async function GET(request: NextRequest) {
     console.error("strava conectar", error);
     ok = false;
   }
-  redirect(ok ? "/estadisticas?strava=conectado#strava" : "/estadisticas?strava=error#strava");
+  redirect(ok ? "/progreso?strava=conectado#strava" : "/progreso?strava=error#strava");
 }

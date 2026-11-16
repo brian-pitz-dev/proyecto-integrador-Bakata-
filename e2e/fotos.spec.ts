@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { FECHA_E2E, PNG_CHICO } from "./datos";
 
 test("subir una foto con datos, editarla y borrarla", async ({ page }) => {
-  await page.goto("/estadisticas");
+  await page.goto("/progreso");
 
   const selector = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Subir una foto" }).click();

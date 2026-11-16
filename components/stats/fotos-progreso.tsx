@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { borrarFoto, guardarDatosFoto, subirFoto } from "@/app/(app)/estadisticas/actions";
+import { borrarFoto, guardarDatosFoto, subirFoto } from "@/app/(app)/progreso/actions";
 import { formatShort, fromISO } from "@/lib/date";
 import { NOTA_MAX, type Foto } from "@/lib/fotos";
 

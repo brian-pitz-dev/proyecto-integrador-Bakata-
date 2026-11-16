@@ -45,9 +45,9 @@ import { LineaTiempo, type Punto } from "@/components/stats/linea-tiempo";
 import type { Categoria, Registro } from "@/lib/types";
 
 export const metadata: Metadata = {
-  title: "Estadísticas · Bakata",
+  title: "Progreso · Bakata",
   description: "Resumen de logros, progreso de peso y registro de datos diarios.",
-  alternates: { canonical: "/estadisticas" },
+  alternates: { canonical: "/progreso" },
 };
 
 async function fetchData() {
@@ -223,7 +223,7 @@ export default async function EstadisticasPage({
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-12">
       <PageHeader
-        title="Estadísticas"
+        title="Progreso"
         description="Cómo venís con el plan: entrenamientos, ritmo, peso y descanso."
       />
 

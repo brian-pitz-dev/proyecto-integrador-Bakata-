@@ -24,7 +24,7 @@ const PILARES = [
   },
   {
     icon: TrendingUp,
-    title: "Estadísticas",
+    title: "Progreso",
     text: "Seguimiento de tiradas, ritmo, peso y resultados de tus eventos.",
   },
 ];

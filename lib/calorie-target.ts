@@ -124,7 +124,7 @@ export async function getCalorieTarget(
 }
 
 /**
- * La meta del día con datos ya cargados (getCalorieTarget los busca; Estadísticas ya los tiene y
+ * La meta del día con datos ya cargados (getCalorieTarget los busca; Progreso ya los tiene y
  * se ahorra un viaje a Supabase). `activasDelDia`: calorías activas registradas ese día, o null.
  */
 export function calcularMeta(

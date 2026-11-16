@@ -8,7 +8,7 @@ import { stravaConfigurado, urlAutorizacion } from "@/lib/strava";
 export async function GET(request: NextRequest) {
   const user = await getAuthedUser();
   if (!user) redirect("/login");
-  if (!stravaConfigurado()) redirect("/estadisticas");
+  if (!stravaConfigurado()) redirect("/progreso");
 
   const state = crypto.randomUUID();
   (await cookies()).set("strava_state", state, {

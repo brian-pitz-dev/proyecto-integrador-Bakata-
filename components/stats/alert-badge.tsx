@@ -10,7 +10,7 @@ interface AlertBadgeProps {
   okLabel?: string;
 }
 
-/** Fila de aviso para Estadísticas (gym/datos faltantes), con su contraparte "todo bien". Es un recordatorio, no un error: va en ámbar. */
+/** Fila de aviso para Progreso (gym/datos faltantes), con su contraparte "todo bien". Es un recordatorio, no un error: va en el rosa de avisos (--warning). */
 export function AlertBadge({ label, atRisk, okLabel = "Todo en orden" }: AlertBadgeProps) {
   if (!atRisk) {
     return (

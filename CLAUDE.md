@@ -117,7 +117,7 @@ _configuration_ (profile and events — what used to be hardcoded constants) liv
 ### Routing and auth
 
 - `app/(app)/` is the authenticated route group: `calendario`, `nutricion`,
-  `estadisticas`, `coach`, sharing `app/(app)/layout.tsx` (nav + theme toggle). The
+  `progreso`, `coach`, sharing `app/(app)/layout.tsx` (nav + theme toggle). The
   old `mancuernas` tab was removed in spec 005.
 - `app/login/` and `app/signup/` are public. `app/onboarding/` requires a session but
   not a completed profile. `app/page.tsx` and `proxy.ts` handle the redirect logic

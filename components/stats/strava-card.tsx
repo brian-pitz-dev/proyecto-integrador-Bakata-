@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Download, Unplug } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { desconectarStrava, importarStrava } from "@/app/(app)/estadisticas/actions";
+import { desconectarStrava, importarStrava } from "@/app/(app)/progreso/actions";
 
 const AVISOS: Record<string, { texto: string; error: boolean }> = {
   conectado: { texto: "Strava conectado. Ya podés importar tus corridas.", error: false },

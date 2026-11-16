@@ -4,7 +4,7 @@ test("con sesión, todas las pestañas cargan", async ({ page }) => {
   for (const [ruta, titulo] of [
     ["/calendario", "Calendario"],
     ["/nutricion", "Nutrición"],
-    ["/estadisticas", "Estadísticas"],
+    ["/progreso", "Progreso"],
     ["/coach", "Coach"],
     ["/perfil", "Mi perfil"],
   ]) {
