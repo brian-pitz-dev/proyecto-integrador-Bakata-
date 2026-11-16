@@ -184,6 +184,11 @@ _configuration_ (profile and events — what used to be hardcoded constants) liv
   `research.md` Decision 6 for why this ceiling was accepted rather than adding a
   backing store.
 - `lib/turnstile.ts` verifies Cloudflare Turnstile server-side on login.
+- The anon key + session can write straight to PostgREST/Storage, skipping zod and the rate
+  limits, so the database has its own ceilings (`supabase/migrations/20261116220000_limites_por_usuario.sql`):
+  a `registro.categoria` allowlist, text-length checks, a `plan_ia` size cap, per-user row caps
+  (trigger `tope_filas_por_usuario`) and a 100-photo cap in the Storage insert policy. A new
+  `registro` category needs to be added to that check, or its inserts fail.
 
 ### Dates
 

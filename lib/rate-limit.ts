@@ -1,9 +1,10 @@
 import { headers } from "next/headers";
 
-// ponytail: process-local maps, lost on restart/cold start and not shared
-// across instances — fine for a single-instance Netlify deploy; move to a
-// shared store (e.g. Upstash Ratelimit) only if the deploy target ever
-// becomes multi-instance.
+// shortcut: los contadores viven en la memoria de cada instancia. Netlify corre
+// las funciones en varias instancias en paralelo (y las reinicia en cada cold
+// start), así que el tope real es "N por instancia", no N en total: frena a un
+// usuario apurado, no a un ataque distribuido (para eso está Turnstile). Pasar a
+// un store compartido (ej. Upstash Ratelimit) si hace falta un tope global.
 function limiter(windowMs: number, max: number) {
   const attempts = new Map<string, { count: number; windowStart: number }>();
   return {
@@ -48,8 +49,16 @@ export const coachLimiter = limiter(60 * 1000, 5);
 /** Strava: 3 importaciones por minuto, por usuario (la API de Strava da 100 pedidos cada 15'). */
 export const stravaLimiter = limiter(60 * 1000, 3);
 
-/** IP del cliente para los límites de login y registro. */
+/**
+ * IP del cliente para los límites de login y registro. Primero la que pone Netlify: el primer
+ * valor de x-forwarded-for lo puede mandar el propio cliente, y cambiándolo en cada pedido nunca
+ * llegaría al límite. x-forwarded-for queda para local y otros hosts.
+ */
 export async function getClientKey(): Promise<string> {
   const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  return (
+    h.get("x-nf-client-connection-ip")?.trim() ||
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "unknown"
+  );
 }
