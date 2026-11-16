@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AI_DAILY_LIMIT } from "@/lib/ia-limites";
 import {
   CalendarDays,
   CircleHelp,
@@ -65,7 +66,7 @@ function pasos(nombre: string | null): Paso[] {
       texto: [
         "Un asistente con IA que conoce tu plan: preguntale lo que quieras sobre entrenamiento, comidas o descanso.",
         "También te arma un plan de comidas con lo que tenés en casa y rutinas de gym a tu medida.",
-        "Tenés 20 consultas por día.",
+        `Tenés ${AI_DAILY_LIMIT} consultas por día.`,
       ],
     },
     {

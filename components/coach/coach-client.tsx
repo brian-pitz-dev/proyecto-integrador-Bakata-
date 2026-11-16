@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
@@ -14,8 +14,38 @@ import { chatCoach } from "@/app/(app)/coach/actions";
 import { armarRutinas } from "@/app/(app)/coach/rutinas-actions";
 import { ZonasChips } from "@/components/forms/zonas-chips";
 import { Textarea } from "@/components/ui/textarea";
+import { bloquesDeTexto, type Tramo } from "@/lib/texto-coach";
 
 type Msg = { role: "user" | "model"; text: string };
+
+/** La respuesta del coach con su negrita y sus listas, sin los asteriscos del Markdown. */
+function TextoCoach({ texto }: { texto: string }) {
+  const linea = (tramos: Tramo[]) =>
+    tramos.map((t, i) =>
+      t.negrita ? (
+        <strong key={i} className="font-semibold">
+          {t.texto}
+        </strong>
+      ) : (
+        <Fragment key={i}>{t.texto}</Fragment>
+      ),
+    );
+  return (
+    <div className="grid gap-2">
+      {bloquesDeTexto(texto).map((b, i) =>
+        b.tipo === "lista" ? (
+          <ul key={i} className="grid list-disc gap-1 pl-5 marker:text-primary">
+            {b.items.map((item, j) => (
+              <li key={j}>{linea(item)}</li>
+            ))}
+          </ul>
+        ) : (
+          <p key={i}>{linea(b.tramos)}</p>
+        ),
+      )}
+    </div>
+  );
+}
 type Busy = null | "chat" | "rutinas";
 
 export function CoachClient({
@@ -138,13 +168,13 @@ export function CoachClient({
               <div
                 key={i}
                 className={cn(
-                  "max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap",
+                  "max-w-[85%] rounded-lg px-3 py-2 text-sm",
                   m.role === "user"
-                    ? "justify-self-end bg-primary text-primary-foreground"
+                    ? "justify-self-end bg-primary whitespace-pre-wrap text-primary-foreground"
                     : "justify-self-start bg-muted text-foreground",
                 )}
               >
-                {m.text}
+                {m.role === "user" ? m.text : <TextoCoach texto={m.text} />}
               </div>
             ))}
             {busy === "chat" && <p className="text-sm text-muted-foreground">Pensando…</p>}

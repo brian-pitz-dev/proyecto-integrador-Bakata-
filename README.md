@@ -29,7 +29,7 @@ hardcodeados), y se generalizó a multi-usuario: cualquiera puede crear una cuen
   del día y objetivo de proteína según tu peso, ajustado según la fase de entrenamiento (menos déficit calórico y más carbohidratos antes de
   los eventos largos).
 - **Estadísticas** — seguimiento de tiradas, ritmo y resultados de los eventos.
-- **Coach** — chat con IA (Google Gemini, tier gratis, 20 consultas por día por usuario)
+- **Coach** — chat con IA (Google Gemini, tier gratis, 18 consultas por día por usuario)
   que conoce tu plan, y que además arma un plan de comidas a partir de lo que tenés o
   querés comer y rutinas de gym según tus eventos, metas y equipo.
 
