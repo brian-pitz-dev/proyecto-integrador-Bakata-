@@ -48,7 +48,7 @@ export function EventosResumen({ events }: { events: UserEvent[] }) {
           </Link>
         </div>
       )}
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3">
         {ordenados.map((ev) => {
           const { texto, pasado } = cuando(ev.fecha);
           const Icon = ev.tipo === "carrera" ? Medal : Footprints;
@@ -56,7 +56,7 @@ export function EventosResumen({ events }: { events: UserEvent[] }) {
             <li
               key={ev.id}
               className={cn(
-                "grid gap-1 rounded-[20px] p-5 ring-1",
+                "grid content-start gap-1 rounded-[20px] p-5 ring-1",
                 ev === proximo
                   ? "bg-primary/10 ring-primary/40"
                   : "bg-card shadow-[0_2px_8px_0_rgba(92,53,116,0.08)] ring-foreground/5 dark:ring-white/10",

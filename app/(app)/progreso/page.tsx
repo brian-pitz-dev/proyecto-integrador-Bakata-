@@ -254,7 +254,7 @@ export default async function EstadisticasPage({
         </p>
       )}
 
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid auto-rows-fr grid-cols-2 gap-4 lg:grid-cols-4">
         <h2 className="sr-only">Resumen</h2>
         {statBoxes.map((box, i) => (
           <div
@@ -385,7 +385,7 @@ export default async function EstadisticasPage({
 
       <section className="grid gap-5">
         <h2 className="text-2xl font-semibold">Evolución</h2>
-        <div className="grid items-start gap-5 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Peso</CardTitle>
@@ -432,7 +432,7 @@ export default async function EstadisticasPage({
       <section className="grid gap-5">
         <h2 className="text-2xl font-semibold">Registros</h2>
         {strava !== null && <StravaCard conectado={strava} aviso={avisoStrava} />}
-        <div className="grid items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3">
           <RegistroCategoryCard
             icon={<Scale className="size-4" aria-hidden="true" />}
             title="Peso"
