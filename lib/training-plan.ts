@@ -6,6 +6,7 @@
  * ver specs/004-multi-user-onboarding/spec.md, sección de Asunciones.
  */
 
+import type { Evitar } from "@/lib/ejercicios-zonas";
 import { toISO, fromISO, addDays, isSameDay } from "@/lib/date";
 import { formatPace } from "@/lib/pace";
 import {
@@ -30,6 +31,8 @@ export interface Session {
   motivo?: string;
   /** Label de la sesión que reemplazó (lesión moderada): "En lugar de: Cinta / Cardio". */
   reemplaza?: string;
+  /** Lesiones activas ese día: la rutina saca los ejercicios que las cargan (lib/ejercicios-zonas.ts). */
+  evitar?: Evitar[];
 }
 
 /** Cuándo puede entrenar el usuario: días 0 = lunes … 6 = domingo, y minutos por sesión. */

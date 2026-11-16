@@ -5,7 +5,7 @@
  */
 
 import { addDays, fromISO, toISO } from "@/lib/date";
-import type { Session, Week } from "@/lib/training-plan";
+import type { Session, UserEvent, Week } from "@/lib/training-plan";
 import type { Gravedad, LesionInput, TipoLesion, ZonaLesion } from "@/lib/validation/lesion";
 
 export interface Lesion extends LesionInput {
@@ -194,7 +194,7 @@ export function aplicarLesiones(weeks: Week[], lesiones: Lesion[]): Week[] {
       }
       const motivo = `por tu ${describirLesion(lesion)}`;
       if (lesion.gravedad === "leve") {
-        nuevas.push(liviana(s, grupo, motivo));
+        nuevas.push(leve(s, lesion, motivo));
         continue;
       }
       const reemplazo = reemplazar(grupo, lesion.zona, libre);
@@ -205,20 +205,30 @@ export function aplicarLesiones(weeks: Week[], lesiones: Lesion[]): Week[] {
     }
     // un reemplazo que repite otra sesión del día (ej. running → core, y ya había core): una sola
     const igual = (a: Session, b: Session) => a.label === b.label && a.gymKey === b.gymKey;
-    w.cfg[dk] = nuevas.filter(
-      (s, j) =>
-        !s.reemplaza || !nuevas.some((o, k) => k !== j && igual(o, s) && (!o.reemplaza || k < j)),
-    );
+    // toda rutina del día (gym o core) saca los ejercicios que cargan la lesión (US6):
+    // ExerciseBlock filtra con lib/ejercicios-zonas.ts
+    const evitar = activas.map((l) => ({ zona: l.zona, gravedad: l.gravedad }));
+    w.cfg[dk] = nuevas
+      .filter(
+        (s, j) =>
+          !s.reemplaza || !nuevas.some((o, k) => k !== j && igual(o, s) && (!o.reemplaza || k < j)),
+      )
+      .map((s) => (s.tag === "gym" || s.tag === "core" ? { ...s, evitar } : s));
   });
   return out;
 }
 
-function liviana(s: Session, grupo: Grupo, motivo: string): Session {
-  if (grupo === "piernas" || grupo === "empuje" || grupo === "tiron") {
-    const key = `${sesionesGym[grupo]}Light`;
-    return { ...s, gymKey: key, motivo: `versión liviana ${motivo}` };
-  }
-  if (grupo === "core") return { ...s, coreKey: "light", motivo: `versión corta ${motivo}` };
+/**
+ * Lesión leve: la sesión sigue. La rutina (gym o core) queda sin los ejercicios que cargan la
+ * zona (los saca ExerciseBlock con `evitar`); el cardio, a ritmo suave (y la semana va un escalón
+ * más liviana, semanasLivianas()).
+ */
+function leve(s: Session, lesion: Lesion, motivo: string): Session {
+  if (s.tag === "gym" || s.tag === "core")
+    return {
+      ...s,
+      motivo: `sin los ejercicios que cargan tu ${ZONA_LABEL[lesion.zona]}, ${motivo}`,
+    };
   return { ...s, motivo: `a ritmo suave ${motivo}: si duele, cortá` };
 }
 
@@ -257,19 +267,61 @@ function reemplazar(grupo: Grupo, zona: ZonaLesion, libre: (g: Grupo) => boolean
   return g === "core" ? CORE : gym(g);
 }
 
+/** Días de vuelta gradual después del alta de una lesión moderada o grave (US4). */
+const DIAS_VUELTA = 7;
+
+/** El período [inicio, fin) en que la lesión hace más liviana la semana, o null. */
+function periodoLiviano(l: Lesion): [string, string | null] | null {
+  // leve en piernas o lumbar: mientras dura, el cardio de impacto va un escalón más corto
+  if (l.gravedad === "leve") return afecta("impacto", l.zona, "leve") ? [l.desde, l.hasta] : null;
+  // moderada o grave: la semana después del alta, para volver de a poco
+  return l.hasta ? [l.hasta, toISO(addDays(fromISO(l.hasta), DIAS_VUELTA))] : null;
+}
+
 /**
- * Lunes de las semanas que van un escalón más livianas (como el retome) porque una lesión leve
- * afecta el cardio de impacto algún día de esa semana. Con moderada o grave esas sesiones ya se
- * reemplazan, así que no hace falta.
+ * Lunes de las semanas que van un escalón más livianas (como el retome, spec 009): las de una
+ * lesión leve que afecta el cardio de impacto y la de vuelta después del alta de una moderada o
+ * grave. Mientras la moderada o grave está activa sus sesiones ya se reemplazan o son reposo.
  */
 export function semanasLivianas(weeks: Week[], lesiones: Lesion[]): string[] {
-  const leves = lesiones.filter((l) => l.gravedad === "leve" && afecta("impacto", l.zona, "leve"));
+  const periodos = lesiones.map(periodoLiviano).filter((p) => p !== null);
   return weeks
-    .filter((w) =>
-      leves.some((l) => {
-        const fin = toISO(addDays(fromISO(w.start), 6));
-        return l.desde <= fin && (!l.hasta || l.hasta > w.start);
-      }),
-    )
+    .filter((w) => {
+      const fin = toISO(addDays(fromISO(w.start), 6));
+      return periodos.some(([desde, hasta]) => desde <= fin && (!hasta || hasta > w.start));
+    })
     .map((w) => w.start);
+}
+
+/** La lesión moderada o grave de la que vuelve hoy (alta en los últimos 7 días), o null. */
+export function vueltaDeLesion(lesiones: Lesion[], hoy: string): Lesion | null {
+  return (
+    lesiones
+      .filter((l) => l.gravedad !== "leve" && l.hasta && l.hasta <= hoy)
+      .filter((l) => hoy < toISO(addDays(fromISO(l.hasta!), DIAS_VUELTA)))
+      .sort((a, b) => (a.hasta! < b.hasta! ? 1 : -1))[0] ?? null
+  );
+}
+
+/**
+ * Eventos (de hoy en adelante) que caen mientras dura una lesión que los compromete: cualquier
+ * grave, o una moderada en piernas o lumbar. El evento no se toca (lo decide la persona con su
+ * médico): solo se avisa.
+ */
+export function eventosEnRiesgo(
+  lesiones: Lesion[],
+  events: UserEvent[],
+  hoy: string,
+): { lesion: Lesion; evento: UserEvent }[] {
+  return events
+    .filter((e) => e.fecha >= hoy)
+    .flatMap((evento) => {
+      const lesion = lesiones.find(
+        (l) =>
+          activaEn(l, evento.fecha) &&
+          (l.gravedad === "grave" ||
+            (l.gravedad === "moderada" && afecta("impacto", l.zona, "moderada"))),
+      );
+      return lesion ? [{ lesion, evento }] : [];
+    });
 }

@@ -96,4 +96,21 @@ describe("registro según el objetivo", () => {
       }).success,
     ).toBe(true);
   });
+  it("una lesión en el registro (opcional) necesita el consentimiento", () => {
+    const base = { ...perfil, eventos: [evento], preferencias: { objetivo: "evento" } };
+    const lesion = {
+      tipo: "esguince",
+      zona: "tobillo_pie",
+      lado: "derecho",
+      gravedad: "moderada",
+      desde: "2026-11-16",
+      hasta: null,
+      nota: null,
+    };
+    expect(onboardingSchema.safeParse(base).data?.lesiones).toEqual([]); // sin lesión, como siempre
+    expect(onboardingSchema.safeParse({ ...base, lesiones: [lesion] }).success).toBe(false);
+    expect(
+      onboardingSchema.safeParse({ ...base, lesiones: [lesion], consienteSalud: true }).success,
+    ).toBe(true);
+  });
 });

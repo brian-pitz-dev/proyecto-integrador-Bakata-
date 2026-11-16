@@ -12,6 +12,7 @@ import {
   type EventoInput,
   type PerfilInput,
 } from "@/lib/validation/onboarding";
+import { lesionSchema, ZONAS_SIN_LADO, type LesionInput } from "@/lib/validation/lesion";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -64,6 +65,8 @@ export async function guardarPerfilYEventos(
   userId: string,
   perfil: PerfilInput,
   eventos: EventoInput[],
+  /** Lesiones del paso "Tu plan" (spec 011): ya validadas, con el consentimiento dado. */
+  lesiones: LesionInput[] = [],
 ): Promise<string | null> {
   const { error: perfilError } = await supabase.from("perfil").upsert({
     user_id: userId,
@@ -84,6 +87,21 @@ export async function guardarPerfilYEventos(
         .insert(eventos.map((e) => ({ user_id: userId, ...filaEvento(e) })))
     : { error: null };
   if (eventosError) return falla("evento", eventosError, "No se pudieron guardar los eventos.");
+
+  // igual que los eventos: si es un reintento, sin duplicar
+  if (lesiones.length) {
+    const { error: borrarError } = await supabase.from("lesion").delete().eq("user_id", userId);
+    const { error: lesionError } = borrarError
+      ? { error: borrarError }
+      : await supabase.from("lesion").insert(
+          lesiones.map((l) => ({
+            ...l,
+            lado: ZONAS_SIN_LADO.includes(l.zona) ? null : l.lado,
+            user_id: userId,
+          })),
+        );
+    if (lesionError) return falla("lesion", lesionError, "No se pudo guardar tu lesión.");
+  }
 
   const { error: metaError } = await supabase.auth.updateUser({
     // registro_pendiente: null → se borra la copia que viajó en el registro (ver completarRegistroPendiente)
@@ -110,7 +128,14 @@ export async function completarRegistroPendiente(
   const perfil = perfilSchema.safeParse(meta.registro_pendiente?.perfil);
   const eventos = eventosSchema.safeParse(meta.registro_pendiente?.eventos);
   if (!perfil.success || !eventos.success) return "/onboarding";
+  // solo con el consentimiento que quedó al registrarse; si no valida, sigue sin la lesión
+  const lesiones = meta.salud_consentida_at
+    ? (lesionSchema
+        .array()
+        .max(3)
+        .safeParse(meta.registro_pendiente?.lesiones ?? []).data ?? [])
+    : [];
 
-  const error = await guardarPerfilYEventos(supabase, user.id, perfil.data, eventos.data);
+  const error = await guardarPerfilYEventos(supabase, user.id, perfil.data, eventos.data, lesiones);
   return error ? "/onboarding" : "/calendario";
 }

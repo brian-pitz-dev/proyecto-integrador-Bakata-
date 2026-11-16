@@ -21,6 +21,7 @@ const PASO_POR_CAMPO: Record<string, number> = {
   perfil: 1,
   eventos: 2,
   preferencias: 3,
+  lesiones: 3,
 };
 
 /** Registro en pasos: crea la cuenta, guarda perfil + eventos y entra a la app, en un solo envío. */
@@ -48,7 +49,7 @@ export async function registrar(input: unknown): Promise<RegistroResult> {
     return { ok: false, message: "Verificación anti-bot fallida. Probá de nuevo." };
   }
 
-  const { cuenta, perfil, eventos, preferencias } = parsed.data;
+  const { cuenta, perfil, eventos, preferencias, lesiones, consienteSalud } = parsed.data;
   const h = await headers();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -63,7 +64,9 @@ export async function registrar(input: unknown): Promise<RegistroResult> {
         terminos_aceptados_at: new Date().toISOString(),
         // Sin sesión hasta confirmar el email no se puede guardar el perfil (RLS): viaja acá y
         // lo crea completarRegistroPendiente (lib/perfil.ts) al confirmar o al iniciar sesión.
-        registro_pendiente: { perfil, eventos },
+        registro_pendiente: { perfil, eventos, lesiones },
+        // consentimiento expreso para guardar datos de salud (spec 011), solo si cargó una lesión
+        ...(lesiones.length && consienteSalud && { salud_consentida_at: new Date().toISOString() }),
         // La IA arma su plan al entrar por primera vez a la app (components/plan-inicial.tsx).
         preferencias,
         plan_pendiente: true,
@@ -89,7 +92,13 @@ export async function registrar(input: unknown): Promise<RegistroResult> {
     return { ok: true, confirmar: cuenta.email };
   }
 
-  const perfilError = await guardarPerfilYEventos(supabase, data.user.id, perfil, eventos);
+  const perfilError = await guardarPerfilYEventos(
+    supabase,
+    data.user.id,
+    perfil,
+    eventos,
+    lesiones,
+  );
   // La cuenta ya existe: si falló el perfil, se termina en /onboarding (mismos pasos 2 y 3).
   if (perfilError) redirect("/onboarding");
 

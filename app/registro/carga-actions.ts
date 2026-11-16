@@ -38,9 +38,7 @@ export async function saveCarga(input: {
   if (kg !== null) {
     const { data, error } = await supabase
       .from("registro")
-      .insert([
-        { categoria: CATEGORIA_CARGA, fecha, valor: kg, nota: ejercicio, user_id: user.id },
-      ])
+      .insert([{ categoria: CATEGORIA_CARGA, fecha, valor: kg, nota: ejercicio, user_id: user.id }])
       .select("id")
       .single();
     if (error) {

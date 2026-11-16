@@ -86,11 +86,13 @@ events, today)` maps that content onto a specific user's own event dates (see
 - Semana de retome (`specs/009-semana-retome`): `semanaDeRetome()` decides from last week's
   `completado` rows whether the current week goes lighter (one minutes tier down, applied by
   `buildPlan(…, retome)`); `getUserPlanContext()` computes it, so every page sees the same plan.
-- Lesiones (`specs/011-lesiones`, etapa 1): tabla `lesion` (RLS, cascade; dato sensible, el
+- Lesiones (`specs/011-lesiones`): tabla `lesion` (RLS, cascade; dato sensible, el
   consentimiento queda en `user_metadata.salud_consentida_at`). `aplicarLesiones()` (`lib/lesiones.ts`)
-  es el último ajuste de `getUserPlanContext()`: por día, leve → más liviano, moderada → reemplaza
-  la sesión sin repetir grupo en días seguidos, grave → reposo. `hasta` es el alta (primer día
-  recuperado). Se cargan al final de Progreso (`app/(app)/progreso/lesiones-actions.ts`).
+  es el último ajuste de `getUserPlanContext()`: por día, leve → la rutina saca los ejercicios que
+  cargan la zona (`lib/ejercicios-zonas.ts`, todo ejercicio nuevo del catálogo necesita su entrada),
+  moderada → reemplaza la sesión sin repetir grupo en días seguidos, grave → reposo; después del alta,
+  7 días más livianos. `hasta` es el alta (primer día recuperado). Se cargan al final de Progreso
+  (`app/(app)/progreso/lesiones-actions.ts`) y, opcional, en el registro.
 - `lib/strava.ts` (`specs/010-strava`): OAuth (`app/strava/conectar` → `app/strava/callback`,
   `state` cookie) and a manual import that maps runs/walks to `registro` rows. Tokens live in
   `strava_conexion` (RLS, cascade) and are only used server-side; the card hides without

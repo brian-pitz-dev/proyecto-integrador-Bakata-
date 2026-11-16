@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { edadDesde, toISO, todayNormalized } from "@/lib/date";
 import { preferenciasSchema } from "@/lib/validation/coach";
+import { lesionSchema } from "@/lib/validation/lesion";
 
 // Los mismos schemas validan cada paso del registro en el cliente y el envío completo en el server.
 
@@ -123,9 +124,21 @@ export function faltaEvento(objetivo: string | undefined, eventos: readonly unkn
 /** Paso 4: lo que la IA necesita para armar el plan (qué no come, zonas, equipo). Todo opcional. */
 const preferenciasPaso = preferenciasSchema.default({ noCome: "", zonas: [], equipo: "" });
 
-/** /onboarding: cuenta ya creada, solo perfil + eventos + preferencias. */
+/** Paso 4 (opcional): una lesión que ya tiene, con el consentimiento para guardarla (spec 011). */
+const lesionesPaso = z.array(lesionSchema).max(3).default([]);
+const MSG_CONSENTIMIENTO = "Para guardar tu lesión necesitamos tu consentimiento";
+const sinConsentimiento = (d: { lesiones: unknown[]; consienteSalud: boolean }) =>
+  d.lesiones.length > 0 && !d.consienteSalud;
+
+/** /onboarding: cuenta ya creada, solo perfil + eventos + preferencias (+ lesiones). */
 export const onboardingSchema = perfilSchema
-  .extend({ eventos: eventosSchema, preferencias: preferenciasPaso })
+  .extend({
+    eventos: eventosSchema,
+    preferencias: preferenciasPaso,
+    lesiones: lesionesPaso,
+    consienteSalud: z.boolean().default(false),
+  })
+  .refine((d) => !sinConsentimiento(d), { message: MSG_CONSENTIMIENTO, path: ["lesiones"] })
   .refine((d) => !faltaEvento(d.preferencias.objetivo, d.eventos), {
     message: MSG_EVENTO,
     path: ["eventos"],
@@ -142,8 +155,11 @@ export const registroSchema = z
     perfil: perfilSchema,
     eventos: eventosSchema,
     preferencias: preferenciasPaso,
+    lesiones: lesionesPaso,
+    consienteSalud: z.boolean().default(false),
     turnstileToken: z.string().min(1, "Completá la verificación anti-bot"),
   })
+  .refine((d) => !sinConsentimiento(d), { message: MSG_CONSENTIMIENTO, path: ["lesiones"] })
   .refine((d) => !faltaEvento(d.preferencias.objetivo, d.eventos), {
     message: MSG_EVENTO,
     path: ["eventos"],

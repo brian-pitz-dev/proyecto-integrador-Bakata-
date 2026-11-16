@@ -39,10 +39,11 @@ etapa 1: un esguince de tobillo derecho igual impide correr.
 
 ## Decisión 3 — Qué hace cada gravedad
 
-- **Leve**: el gym afectado pasa a su versión liviana (`empuje` → `empujeLight`, igual que la
-  descarga). El cardio de impacto baja un escalón de minutos en las semanas con lesión leve que lo
-  afecte, con el mismo mecanismo del retome: `buildPlan` recibe hoy _una_ semana de retome; pasa a
-  recibir una lista (`string[]`). El resto queda igual.
+- **Leve**: la sesión sigue. En la etapa 1 el gym afectado pasaba a su versión liviana; desde la
+  etapa 2 queda la misma rutina sin los ejercicios que cargan la zona (Decisión 9). El cardio de
+  impacto baja un escalón de minutos en las semanas con lesión leve que lo afecte, con el mismo
+  mecanismo del retome: `buildPlan` recibía _una_ semana de retome; pasa a recibir una lista
+  (`semanasLivianas()`). El resto queda igual.
 - **Moderada** — **reemplazar** (decisión de Brian), sin dejar el mismo grupo muscular en días
   seguidos (la regla de `gruposDelDia` en `lib/mover.ts`):
   - cardio (running, salida larga, caminata) con lesión inferior → core (si el core también está
@@ -116,3 +117,40 @@ el plan de todas las pestañas.
 - `e2e/lesiones.spec.ts`: cargar una lesión grave de tobillo con fecha de hoy → el día de hoy del
   Calendario dice "Reposo" y aparece el aviso; "Ya estoy bien" → vuelve el plan. `global-setup.ts`
   borra las lesiones de la cuenta E2E antes de correr.
+
+## Decisión 9 — Zonas por ejercicio (etapa 2, US6)
+
+`lib/ejercicios-zonas.ts` etiqueta a mano los 65 ejercicios del catálogo con las zonas que
+**cargan**, que no son los músculos que trabajan (un press de pecho carga hombro, codo y muñeca).
+Dos niveles: principal (el esfuerzo o el riesgo está ahí; se saca con leve) y secundaria (también
+se carga; se saca desde moderada). `lib/ejercicios-zonas.test.ts` falla si un ejercicio nuevo del
+catálogo no tiene su entrada. Un ejercicio fuera del catálogo (rutinas viejas de la IA) queda: no se
+sabe qué carga.
+
+- `aplicarLesiones` deja en cada sesión de gym o core del día la lista `evitar` (zona + gravedad de
+  las lesiones activas) y `ExerciseBlock` filtra antes del tope por tiempo y muestra qué sacó.
+- Criterio conservador: con hombro leve, el hombro es principal en todos los press, así que el día
+  de empuje puede quedar con 1-2 ejercicios. Si se quiere más permisivo, pasar el hombro a
+  secundaria en los press de pecho en máquina.
+
+## Decisión 10 — Vuelta gradual (etapa 2, US4)
+
+Los 7 días desde el alta (`hasta`) de una moderada o grave van un escalón más livianos con el
+mismo mecanismo del retome (`semanasLivianas()` suma ese período). Por semana: si el alta cae un
+jueves, van más livianas esa semana y la siguiente. `vueltaDeLesion()` decide el aviso del
+Calendario. "Ya estoy bien" pone el alta en hoy, así que la vuelta arranca ese mismo día.
+
+## Decisión 11 — Aviso de eventos (etapa 2)
+
+`eventosEnRiesgo()`: eventos de hoy en adelante cuya fecha cae con una lesión activa grave
+(cualquier zona: es reposo total) o moderada de piernas o lumbar. Solo avisa en el Calendario; el
+día del evento no cambia (Decisión 1).
+
+## Decisión 12 — Lesión en el registro (etapa 2, US5)
+
+Va al final del paso "Tu plan" (no suma un paso). `registroSchema` y `onboardingSchema` aceptan
+`lesiones` (hasta 3, por defecto ninguna) y `consienteSalud`, y rechazan una lesión sin
+consentimiento. El consentimiento queda en `user_metadata.salud_consentida_at` (en el `signUp` o en
+el `updateUser` del onboarding). Si hay que confirmar el email, la lesión viaja en
+`registro_pendiente.lesiones` y `completarRegistroPendiente` solo la guarda si quedó ese
+consentimiento; `guardarPerfilYEventos` la inserta (borrando antes, por si es un reintento).

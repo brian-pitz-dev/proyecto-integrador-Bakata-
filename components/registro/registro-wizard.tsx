@@ -27,6 +27,15 @@ import { PasoObjetivo } from "@/components/registro/paso-objetivo";
 import { PasoTuPlan } from "@/components/registro/paso-tu-plan";
 import { PasoCuenta, type Cuenta } from "@/components/registro/paso-cuenta";
 import { AvisoConfirmarEmail } from "@/components/registro/aviso-confirmar-email";
+import {
+  CamposLesion,
+  ConsentimientoSalud,
+  conCambio,
+  lesionAInput,
+  lesionVacia,
+  type LesionDraft,
+} from "@/components/forms/campos-lesion";
+import { lesionSchema, type LesionInput } from "@/lib/validation/lesion";
 
 export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
   const pasos =
@@ -52,6 +61,10 @@ export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
     zonas: [],
     equipo: "",
   });
+  // lesión opcional del paso "Tu plan" (specs/011-lesiones, US5)
+  const [conLesion, setConLesion] = useState(false);
+  const [lesion, setLesion] = useState<LesionDraft>(lesionVacia);
+  const [consienteSalud, setConsienteSalud] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [pending, setPending] = useState(false);
   // email al que se mandó el link de confirmación: reemplaza el formulario por el aviso
@@ -79,6 +92,10 @@ export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
     const errs = errorsOf(preferenciasSchema.safeParse(preferencias));
     if (!preferencias.nivelCardio) errs.nivelCardio = "Elegí una opción";
     if (!preferencias.nivelGym) errs.nivelGym = "Elegí una opción";
+    if (conLesion) {
+      Object.assign(errs, errorsOf(lesionSchema.safeParse(lesionAInput(lesion)), "lesion."));
+      if (!consienteSalud) errs.consienteSalud = "Necesitamos tu consentimiento para guardarla.";
+    }
     return errs;
   }
 
@@ -127,6 +144,8 @@ export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
     setPending(true);
     const perfilData = toPerfil(perfil);
     const eventosData = eventosAEnviar().map(toEvento);
+    // ya validada en validarPaso
+    const lesiones = conLesion ? [lesionAInput(lesion) as LesionInput] : [];
     const result =
       mode === "signup"
         ? await registrar({
@@ -134,9 +153,17 @@ export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
             perfil: perfilData,
             eventos: eventosData,
             preferencias,
+            lesiones,
+            consienteSalud,
             turnstileToken: turnstile.token,
           })
-        : await completeOnboarding({ ...perfilData, eventos: eventosData, preferencias });
+        : await completeOnboarding({
+            ...perfilData,
+            eventos: eventosData,
+            preferencias,
+            lesiones,
+            consienteSalud,
+          });
 
     // Si salió bien, la acción ya redirigió (sin resultado): solo se manejan avisos y errores.
     if (!result) return;
@@ -224,7 +251,43 @@ export function RegistroWizard({ mode }: { mode: "signup" | "onboarding" }) {
               preferencias={preferencias}
               setPreferencias={setPreferencias}
               errors={errors}
-              extra={conTurnstile ? turnstile.widget : null}
+              extra={
+                <>
+                  <section className="grid gap-3 border-t border-border pt-5">
+                    <label className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 size-4 accent-primary"
+                        checked={conLesion}
+                        onChange={(e) => setConLesion(e.target.checked)}
+                      />
+                      <span>
+                        <span className="font-semibold">Tengo una lesión ahora</span>{" "}
+                        <span className="text-muted-foreground">
+                          (opcional): fractura, esguince, desgarro… Tu plan la va a tener en cuenta.
+                        </span>
+                      </span>
+                    </label>
+                    {conLesion && (
+                      <div className="grid gap-4 rounded-xl border border-primary/40 bg-primary/5 p-4">
+                        <CamposLesion
+                          draft={lesion}
+                          set={(patch) => setLesion((prev) => conCambio(prev, patch))}
+                          errors={errors}
+                          id="registro"
+                          k={(campo) => `lesion.${campo}`}
+                        />
+                        <ConsentimientoSalud
+                          checked={consienteSalud}
+                          onChange={setConsienteSalud}
+                          error={errors.consienteSalud}
+                        />
+                      </div>
+                    )}
+                  </section>
+                  {conTurnstile ? turnstile.widget : null}
+                </>
+              }
             />
           )}
 

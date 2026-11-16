@@ -1,6 +1,6 @@
 # Feature Specification: Lesiones que ajustan el plan
 
-**Feature**: `011-lesiones` | **Created**: 2026-11-16 | **Status**: Etapa 1 implementada (2026-11-16): tests unitarios, e2e y revisada en Playwright; etapa 2 pendiente
+**Feature**: `011-lesiones` | **Created**: 2026-11-16 | **Status**: Etapas 1 y 2 implementadas (2026-11-16): tests unitarios, e2e y revisadas en Playwright
 
 **Input**: "La opción de marcar si tenés lesiones que tu calendario de ejercicios deba tener en
 cuenta (fracturas, esguinces, fisuras…): tipo de lesión, zona y gravedad, y con eso ajustar el
@@ -59,19 +59,25 @@ proponen ejercicios para la zona lesionada y recomiendan consultar a un médico 
 
 ## US4 — Volver de a poco (P2, etapa 2)
 
-Al cerrarse una lesión moderada o grave, la semana siguiente es de **retome** (un escalón menos
-de minutos, spec 009), con el aviso "Volvés de tu lesión: esta semana va más liviana".
+Durante los 7 días que siguen al alta de una lesión moderada o grave, las semanas que tocan esos
+días van un escalón más livianas (como el retome, spec 009), y el Calendario avisa: "Volvés de tu
+esguince de tobillo: esta semana las sesiones van más cortas para que vuelvas de a poco".
 
 ## US5 — Cargarla al registrarse (P2, etapa 2)
 
-Un paso opcional en el registro: "¿Tenés alguna lesión ahora?", con los mismos campos, que se
-puede saltear.
+Al final del paso "Tu plan" del registro (y del /onboarding de respaldo), una casilla opcional
+"Tengo una lesión ahora" que abre los mismos campos que en Progreso, con el consentimiento. Viaja en
+el registro (`registro_pendiente.lesiones` si hay que confirmar el email) y se guarda junto con el
+perfil y los eventos.
 
 ## US6 — Ejercicio por ejercicio (P3, etapa 2)
 
-Con lesión leve, en vez de pasar toda la rutina a liviana, se sacan solo los ejercicios que
-cargan esa zona (ej. hombro: fuera el press de hombros, quedan los de pecho en máquina). Requiere
-etiquetar con zonas cada ejercicio del catálogo (`lib/gym-exercises.ts`).
+Cada ejercicio del catálogo tiene las zonas que carga (`lib/ejercicios-zonas.ts`): **principales**
+(se sacan ya con lesión leve) y **secundarias** (desde moderada). Con lesión leve la rutina ya no
+pasa entera a su versión liviana: queda la misma sin los ejercicios que cargan la zona, y lo dice
+("Sin press de hombros en máquina, vuelos laterales: cargan tu lesión"). Se aplica a toda rutina
+de gym o core de un día con lesión activa, aunque su grupo no esté afectado (ej. rodilla → el core
+saca el perro de caza). Si no queda ninguno: "hoy, solo movilidad suave".
 
 ## Avisos y seguridad
 
@@ -79,9 +85,10 @@ etiquetar con zonas cada ejercicio del catálogo (`lib/gym-exercises.ts`).
   fractura, luxación, cirugía o cualquier lesión grave se recomienda consultar.
 - **Con lesión grave sin fecha de alta, la app nunca te devuelve sola al entrenamiento**: el
   reposo sigue hasta "Ya estoy bien".
-- **Eventos**: si una lesión activa (moderada o grave, en una zona que el evento usa) cae sobre la
-  fecha de una carrera o caminata, se avisa ("Tu lesión llega hasta después de tu 10K: hablalo con
-  tu médico"). El evento no se borra ni se cambia solo.
+- **Eventos** (etapa 2): si una lesión grave, o una moderada de piernas o lumbar, sigue sin alta
+  el día de una carrera o caminata, el Calendario avisa ("Tenés 10K el 6 dic y tu esguince todavía no
+  va a tener el alta: hablalo con tu médico antes de correrla"). El evento no se borra ni se cambia
+  solo.
 
 ## Etapas
 

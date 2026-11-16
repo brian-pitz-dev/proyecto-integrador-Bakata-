@@ -1,5 +1,6 @@
 import { ajustarRutinaNivel, coreRoutines, getGymRoutine, type Routine } from "@/lib/gym-exercises";
 import { cn } from "@/lib/utils";
+import { filtrarPorLesion, type Evitar } from "@/lib/ejercicios-zonas";
 import { ExerciseThumb, VideoLink } from "@/components/calendar-grid/exercise-media";
 import { CargaInput, SetsLabel, useNivelGym } from "@/components/calendar-grid/cargas";
 
@@ -10,6 +11,7 @@ export function ExerciseBlock({
   maxEjercicios,
   weekNum,
   fecha,
+  evitar,
   inverse = false,
 }: {
   gymKey?: string;
@@ -22,6 +24,8 @@ export function ExerciseBlock({
   weekNum?: number;
   /** Día (ISO) de la sesión: para anotar el peso usado en cada ejercicio de gym. */
   fecha?: string;
+  /** Lesiones activas ese día: se sacan los ejercicios que las cargan (specs/011-lesiones). */
+  evitar?: Evitar[];
   /** Dentro de la tarjeta destacada de "Hoy" (lila en claro, violeta en oscuro). */
   inverse?: boolean;
 }) {
@@ -33,7 +37,9 @@ export function ExerciseBlock({
       ? coreRoutines[coreKey]
       : undefined;
   if (!routine) return null;
-  const exercises = routine.exercises.slice(0, maxEjercicios);
+  // primero se sacan los que cargan la lesión y después va el tope por tiempo
+  const { quedan, sacados } = filtrarPorLesion(routine.exercises, evitar);
+  const exercises = quedan.slice(0, maxEjercicios);
   // peso por ejercicio solo en gym (el core es con peso corporal) y no en series por tiempo
   const conCarga = (sets: string) => !!gymKey && !!fecha && !/seg\b/.test(sets);
   const trenInferior = !!gymKey?.startsWith("inferior");
@@ -49,7 +55,7 @@ export function ExerciseBlock({
             : "text-muted-foreground hover:text-foreground",
         )}
       >
-        {routine.label} ({exercises.length} ejercicios)
+        {routine.label} ({exercises.length} {exercises.length === 1 ? "ejercicio" : "ejercicios"})
       </summary>
       <div
         className={cn(
@@ -60,6 +66,13 @@ export function ExerciseBlock({
         {routine.warmup && (
           <p className={cn("text-xs", muted)}>
             <span className="font-semibold">Entrada en calor:</span> {routine.warmup}
+          </p>
+        )}
+        {sacados.length > 0 && (
+          <p className="text-xs font-medium text-primary dark:text-[#d6b8f2]">
+            {exercises.length === 0
+              ? "Ningún ejercicio de esta rutina se puede hacer sin cargar tu lesión: hoy, solo movilidad suave."
+              : `Sin ${sacados.map((e) => e.name.toLowerCase()).join(", ")}: cargan tu lesión.`}
           </p>
         )}
         <ul className="grid gap-3">

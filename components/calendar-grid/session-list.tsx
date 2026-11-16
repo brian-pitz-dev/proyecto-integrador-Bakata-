@@ -76,6 +76,7 @@ export function SessionList({
             maxEjercicios={s.maxEjercicios}
             weekNum={weekNum}
             fecha={fecha}
+            evitar={s.evitar}
             inverse={inverse}
           />
         </div>

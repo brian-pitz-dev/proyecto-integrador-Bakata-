@@ -12,7 +12,13 @@ import Link from "next/link";
 import { addDays, formatShort, fromISO, toISO, todayNormalized } from "@/lib/date";
 import { CATEGORIA_CARGA, type Carga } from "@/lib/validation/carga";
 import { Bandage, HeartPulse } from "lucide-react";
-import { activaEn, describirLesion, GRAVEDAD_LABEL } from "@/lib/lesiones";
+import {
+  activaEn,
+  describirLesion,
+  eventosEnRiesgo,
+  GRAVEDAD_LABEL,
+  vueltaDeLesion,
+} from "@/lib/lesiones";
 import { PageHeader } from "@/components/page-header";
 import { SURFACE } from "@/lib/styles";
 import { cn } from "@/lib/utils";
@@ -78,6 +84,8 @@ export default async function CalendarioPage() {
     : undefined;
   const mesTerminado = !!estadoMes(inicioMes, hoy)?.terminado;
   const lesionesHoy = planContext.lesiones.filter((l) => activaEn(l, hoy));
+  const vuelta = vueltaDeLesion(planContext.lesiones, hoy);
+  const enRiesgo = eventosEnRiesgo(planContext.lesiones, planContext.events, hoy);
   const reglas = reglasPara({
     objetivo: preferencias.objetivo,
     nivelCardio: preferencias.nivelCardio,
@@ -124,7 +132,7 @@ export default async function CalendarioPage() {
           </span>
         </p>
       )}
-      {lesionesHoy.length > 0 && (
+      {(lesionesHoy.length > 0 || vuelta || enRiesgo.length > 0) && (
         <div
           role="status"
           className="mx-auto flex w-full max-w-4xl items-start gap-2 rounded-[20px] bg-primary/10 p-5 text-sm ring-1 ring-primary/30"
@@ -133,11 +141,26 @@ export default async function CalendarioPage() {
           <div className="grid gap-1">
             {lesionesHoy.map((l) => (
               <p key={l.id}>
-                <strong>Tu plan está ajustado por tu {describirLesion(l)}</strong> (
-                {GRAVEDAD_LABEL[l.gravedad]})
+                <strong>Tu plan está ajustado por tu {describirLesion(l)}</strong>,{" "}
+                {GRAVEDAD_LABEL[l.gravedad]},
                 {l.hasta
-                  ? ` hasta el ${formatShort(fromISO(l.hasta))}.`
+                  ? ` hasta tu alta, el ${formatShort(fromISO(l.hasta))}.`
                   : " hasta que marques “Ya estoy bien” en Progreso."}
+              </p>
+            ))}
+            {vuelta && (
+              <p>
+                <strong>Volvés de tu {describirLesion(vuelta)}:</strong> esta semana las sesiones
+                van más cortas para que vuelvas de a poco.
+              </p>
+            )}
+            {enRiesgo.map(({ lesion, evento }) => (
+              <p key={`${lesion.id}-${evento.id}`}>
+                <strong>
+                  Tenés {evento.nombre} el {formatShort(fromISO(evento.fecha))}
+                </strong>{" "}
+                y tu {describirLesion(lesion)} todavía no va a tener el alta: hablalo con tu médico
+                antes de {evento.tipo === "carrera" ? "correrla" : "hacerla"}.
               </p>
             ))}
             <p className="text-muted-foreground">
