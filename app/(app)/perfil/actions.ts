@@ -210,11 +210,13 @@ export async function borrarCuenta(password: unknown): Promise<ActionResult> {
   // la fila se borra en cascada con la cuenta, pero el permiso en Strava hay que revocarlo
   await desconectarStrava(supabase, user.id).catch((e) => console.error("strava desconectar", e));
 
-  const { error } = await supabase.rpc("borrar_mi_cuenta");
+  // la base vuelve a chequear la clave: llamar la función directo por la API no alcanza
+  const { data: borrada, error } = await supabase.rpc("borrar_mi_cuenta", { clave: parsed.data });
   if (error) {
     console.error("borrar_mi_cuenta", error);
     return { ok: false, message: "No se pudo borrar la cuenta. Probá de nuevo." };
   }
+  if (borrada !== true) return { ok: false, message: "Contraseña incorrecta." };
 
   // El usuario ya no existe: solo se limpian las cookies de la sesión.
   await supabase.auth.signOut({ scope: "local" });

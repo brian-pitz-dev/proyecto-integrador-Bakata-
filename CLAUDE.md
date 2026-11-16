@@ -131,7 +131,8 @@ _configuration_ (profile and events — what used to be hardcoded constants) liv
   `app/(app)/perfil/exportar/route.ts` (POST with the password, checked by
   `lib/verificar-clave.ts`) returns all the user's rows as JSON (paginated past
   PostgREST's 1000-row cap); `borrarCuenta` re-checks the password and calls the
-  `borrar_mi_cuenta()` SQL function (security definer, deletes `auth.users` row; every
+  `borrar_mi_cuenta(clave)` SQL function (security definer, re-checks the password against
+  `auth.users` so a stolen session can't call it directly, deletes the `auth.users` row; every
   table cascades) — no service-role key in the app.
 - Progress photos (`specs/007-fotos-progreso`): no table — Storage bucket `fotos-progreso`
   (private, owner-folder RLS) holds `{user_id}/{fecha}.jpg`, see `lib/fotos.ts`. A
