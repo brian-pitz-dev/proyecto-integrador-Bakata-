@@ -41,7 +41,12 @@ async function fetchCargas(): Promise<Carga[]> {
 /** Equivalente a getCompletedDates() de plan_vida_2026.html. */
 async function fetchCompletedDates(): Promise<string[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("registro").select("fecha").eq("categoria", "completado");
+  // PostgREST corta en 1000 filas: ordenadas de la más nueva, si alguien llega se pierden las viejas
+  const { data } = await supabase
+    .from("registro")
+    .select("fecha")
+    .eq("categoria", "completado")
+    .order("fecha", { ascending: false });
   return (data ?? []).map((r) => r.fecha as string);
 }
 
